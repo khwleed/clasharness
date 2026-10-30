@@ -1,0 +1,78 @@
+# Copy to config.toml and fill in. Anything you leave out uses the defaults in
+# src/clasharness/config.py.
+
+[api]
+# Create a key at https://developer.clashroyale.com and whitelist the RoyaleAPI
+# proxy IP (see README), not your own IP.
+token = ""
+base_url = "https://proxy.royaleapi.dev/v1"
+my_tag = "#YOURTAG"
+
+[anthropic]
+# Used to read the opponent's name off the screen. Leave empty to use
+# ANTHROPIC_API_KEY (or an `ant auth login` profile).
+api_key = ""
+model = "claude-opus-5-5"
+effort = "low"
+
+[server]
+host = "127.0.0.1"
+port = 8765
+open_browser = true
+
+[scrcpy]
+enabled = true
+autostart = true
+path = "scrcpy"
+args = ["--stay-awake", "--window-title=Clash Royale", "--max-size=1600"]
+# Over Wi-Fi instead of USB: add "--tcpip" (or "--tcpip=192.168.1.23").
+
+[vision]
+enabled = true
+identify_on_start = true
+# Seconds after Start before the screenshot (the name banner needs to be on screen).
+delay_seconds = 1.5
+# Opponent name/clan banner as fractions of the screen: [x0, y0, x1, y1].
+# Check it in the UI under Setup → Name crop calibration.
+crop = [0.0, 0.0, 0.75, 0.085]
+
+[elixir]
+# Ladder / Path of Legends. Change if Supercell changes the rules.
+start = 5.0
+max = 10.0
+seconds_per_elixir = 2.8
+regulation_seconds = 180
+end = 300
+phases = [
+  { start = 0, multiplier = 1, name = "Single elixir" },
+  { start = 120, multiplier = 2, name = "Double elixir" },
+  { start = 180, multiplier = 2, name = "Overtime" },
+  { start = 240, multiplier = 3, name = "Overtime x3" },
+]
+
+[predict]
+min_support = 15          # decks needed before trusting exact matches
+max_deck_age_days = 21    # ignore decks not seen recently (meta shifts)
+history_weight = 0.8      # how much the opponent's own recent decks count
+trophy_window = 800       # crawl players within this many trophies of you
+trickle_players = 15      # background crawl size…
+trickle_interval_seconds = 600  # …and how often
+
+[hotkeys]
+enabled = true
+# pynput syntax: <f1>, <alt>+q, <ctrl>+<shift>+x, ...
+my_cards = ["<f1>", "<f2>", "<f3>", "<f4>", "<f5>", "<f6>", "<f7>", "<f8>"]
+opp_seen = ["<alt>+1", "<alt>+2", "<alt>+3", "<alt>+4", "<alt>+5", "<alt>+6", "<alt>+7", "<alt>+8"]
+opp_predicted = ["<alt>+q", "<alt>+w", "<alt>+e", "<alt>+r"]
+opp_search = "<alt>+<space>"
+start = "<f9>"
+end = "<f10>"
+next_phase = "<f11>"
+undo = "<f12>"
+identify = "<alt>+i"
+my_ability = "<ctrl>+a"
+opp_ability = "<alt>+a"
+my_plus = "<ctrl>+="
+my_minus = "<ctrl>+-"
+opp_plus = "<alt>+="
+opp_minus = "<alt>+-"

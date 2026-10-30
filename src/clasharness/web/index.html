@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clash Harness</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="clock"><span id="clock">3:00</span><span id="phase" class="phase">Idle</span></div>
+  <div class="controls">
+    <button data-cmd="start" class="primary" title="F9">Start <kbd>F9</kbd></button>
+    <button data-cmd="end" title="F10">End <kbd>F10</kbd></button>
+    <button data-cmd="next_phase" title="F11">Next phase <kbd>F11</kbd></button>
+    <button data-cmd="undo" title="F12">Undo <kbd>F12</kbd></button>
+    <button data-cmd="reset" class="ghost">Reset</button>
+  </div>
+  <div class="chips" id="chips"></div>
+</header>
+
+<main class="layout">
+  <section class="board">
+    <div class="side opp" id="side-opp">
+      <div class="side-head">
+        <h2>Opponent <span id="opp-name" class="muted"></span></h2>
+        <div class="tweaks">
+          <button data-cmd="adjust" data-side="opp" data-amount="-1" title="Alt+-">−1</button>
+          <button data-cmd="adjust" data-side="opp" data-amount="1" title="Alt+=">+1</button>
+          <button data-cmd="ability" data-side="opp" title="Alt+A">Ability</button>
+          <button data-cmd="collector_destroyed" data-side="opp" title="Elixir Collector destroyed">Pump down</button>
+        </div>
+      </div>
+      <div class="elixir" id="elixir-opp"></div>
+      <div class="row-label">Hand <span class="muted" id="hand-note-opp"></span></div>
+      <div class="cards hand" id="hand-opp"></div>
+      <div class="row-label">Seen cards <span class="muted">click or <kbd>Alt</kbd>+<kbd>1–8</kbd> · faded = can't be in hand</span></div>
+      <div class="cards deck" id="deck-opp"></div>
+      <div class="warn" id="warn-opp"></div>
+    </div>
+
+    <div class="side me" id="side-me">
+      <div class="side-head">
+        <h2>You <span id="my-name" class="muted"></span></h2>
+        <div class="tweaks">
+          <button data-cmd="adjust" data-side="me" data-amount="-1" title="Ctrl+-">−1</button>
+          <button data-cmd="adjust" data-side="me" data-amount="1" title="Ctrl+=">+1</button>
+          <button data-cmd="ability" data-side="me" title="Ctrl+A">Ability</button>
+          <button data-cmd="collector_destroyed" data-side="me" title="Elixir Collector destroyed">Pump down</button>
+        </div>
+      </div>
+      <div class="elixir" id="elixir-me"></div>
+      <div class="row-label">Hand <span class="muted" id="hand-note-me"></span></div>
+      <div class="cards hand" id="hand-me"></div>
+      <div class="row-label">Deck <span class="muted">click or <kbd>F1–F8</kbd> when you play a card</span></div>
+      <div class="cards deck" id="deck-me"></div>
+      <div class="warn" id="warn-me"></div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <div class="card-box">
+      <h3>Opponent's next cards <span class="muted" id="pred-mode"></span></h3>
+      <div class="search">
+        <input id="opp-search" placeholder="Log an unseen opponent card… (Alt+Space)" autocomplete="off">
+        <div id="opp-search-results" class="search-results"></div>
+      </div>
+      <div id="pred-cards"></div>
+      <details open><summary>Likely decks</summary><div id="pred-decks"></div></details>
+    </div>
+
+    <div class="card-box">
+      <h3>Who is it?</h3>
+      <div id="vision"></div>
+      <div class="inline">
+        <input id="opp-tag" placeholder="#OPPONENTTAG">
+        <button id="opp-tag-set">Use tag</button>
+        <button data-cmd="identify" title="Alt+I">Read screen</button>
+      </div>
+      <div class="muted small" id="opp-history"></div>
+    </div>
+
+    <div class="card-box">
+      <h3>Timeline</h3>
+      <ol id="timeline" class="timeline"></ol>
+    </div>
+
+    <details class="card-box">
+      <summary><h3>Setup</h3></summary>
+      <label>Your player tag
+        <div class="inline"><input id="my-tag" placeholder="#YOURTAG"><button id="my-tag-set">Save</button><button data-cmd="refresh_deck">Reload deck</button></div>
+      </label>
+      <label>Deck (edit if the API is off)
+        <div id="deck-edit" class="deck-edit"></div>
+        <button id="deck-save">Save deck</button>
+      </label>
+      <div class="inline">
+        <button data-cmd="scrcpy" data-action="start">Start scrcpy</button>
+        <button data-cmd="scrcpy" data-action="stop" class="ghost">Stop scrcpy</button>
+      </div>
+      <pre id="scrcpy-log" class="log"></pre>
+      <div class="inline">
+        <button id="crawl">Grow dataset (crawl 200 players)</button>
+      </div>
+      <div class="muted small" id="dataset"></div>
+      <details><summary>Name crop calibration</summary>
+        <p class="small muted">Latest screenshot with the crop used to read the opponent's name. Adjust in config.toml under [vision].crop.</p>
+        <div class="calib"><img id="calib-img" alt=""><div id="calib-box"></div></div>
+        <img id="crop-img" class="crop-img" alt="">
+      </details>
+    </details>
+
+    <details class="card-box">
+      <summary><h3>Recent matches</h3></summary>
+      <div id="matches"></div>
+    </details>
+  </aside>
+</main>
+
+<div id="toast" class="toast"></div>
+<datalist id="card-names"></datalist>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+[
+ {
+  "type": "PvP",
+  "battleTime": "20261030T150000.000Z",
+  "gameMode": {
+   "id": 72000006,
+   "name": "Ladder"
+  },
+  "team": [
+   {
+    "tag": "#ME123",
+    "name": "Me",
+    "startingTrophies": 7000,
+    "crowns": 2,
+    "clan": {
+     "tag": "#CLAN1",
+     "name": "My Clan"
+    },
+    "cards": [
+     {
+      "name": "Hog Rider",
+      "id": 0,
+      "level": 11
+     },
+     {
+      "name": "Musketeer",
+      "id": 1,
+      "level": 11
+     },
+     {
+      "name": "Fireball",
+      "id": 2,
+      "level": 11
+     },
+     {
+      "name": "The Log",
+      "id": 3,
+      "level": 11
+     },
+     {
+      "name": "Ice Golem",
+      "id": 4,
+      "level": 11
+     },
+     {
+      "name": "Skeletons",
+      "id": 5,
+      "level": 11
+     },
+     {
+      "name": "Ice Spirit",
+      "id": 6,
+      "level": 11
+     },
+     {
+      "name": "Cannon",
+      "id": 7,
+      "level": 11
+     }
+    ]
+   }
+  ],
+  "opponent": [
+   {
+    "tag": "#OPP111",
+    "name": "Giant Guy",
+    "startingTrophies": 7020,
+    "crowns": 1,
+    "clan": {
+     "tag": "#CLAN2",
+     "name": "Big Clan"
+    },
+    "cards": [
+     {
+      "name": "Giant",
+      "id": 0,
+      "level": 11
+     },
+     {
+      "name": "Witch",
+      "id": 1,
+      "level": 11
+     },
+     {
+      "name": "Zap",
+      "id": 2,
+      "level": 11
+     },
+     {
+      "name": "Fireball",
+      "id": 3,
+      "level": 11
+     },
+     {
+      "name": "Mega Minion",
+      "id": 4,
+      "level": 11
+     },
+     {
+      "name": "Minions",
+      "id": 5,
+      "level": 11
+     },
+     {
+      "name": "Arrows",
+      "id": 6,
+      "level": 11
+     },
+     {
+      "name": "Prince",
+      "id": 7,
+      "level": 11
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "type": "pathOfLegend",
+  "battleTime": "20261030T140000.000Z",
+  "gameMode": {
+   "id": 72000464,
+   "name": "Ranked1v1_NewArena"
+  },
+  "team": [
+   {
+    "tag": "#ME123",
+    "name": "Me",
+    "crowns": 0,
+    "cards": [
+     {
+      "name": "Hog Rider",
+      "id": 0,
+      "level": 11
+     },
+     {
+      "name": "Musketeer",
+      "id": 1,
+      "level": 11
+     },
+     {
+      "name": "Fireball",
+      "id": 2,
+      "level": 11
+     },
+     {
+      "name": "The Log",
+      "id": 3,
+      "level": 11
+     },
+     {
+      "name": "Ice Golem",
+      "id": 4,
+      "level": 11
+     },
+     {
+      "name": "Skeletons",
+      "id": 5,
+      "level": 11
+     },
+     {
+      "name": "Ice Spirit",
+      "id": 6,
+      "level": 11
+     },
+     {
+      "name": "Cannon",
+      "id": 7,
+      "level": 11
+     }
+    ]
+   }
+  ],
+  "opponent": [
+   {
+    "tag": "#NOCLAN9",
+    "name": "lone wolf \u2606",
+    "crowns": 3,
+    "cards": [
+     {
+      "name": "Golem",
+      "id": 0,
+      "level": 11
+     },
+     {
+      "name": "Night Witch",
+      "id": 1,
+      "level": 11
+     },
+     {
+      "name": "Baby Dragon",
+      "id": 2,
+      "level": 11
+     },
+     {
+      "name": "Lumberjack",
+      "id": 3,
+      "level": 11
+     },
+     {
+      "name": "Tornado",
+      "id": 4,
+      "level": 11
+     },
+     {
+      "name": "Lightning",
+      "id": 5,
+      "level": 11
+     },
+     {
+      "name": "Mega Minion",
+      "id": 6,
+      "level": 11
+     },
+     {
+      "name": "Barbarian Barrel",
+      "id": 7,
+      "level": 11
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "type": "clanMate2v2",
+  "battleTime": "20261030T130000.000Z",
+  "gameMode": {
+   "name": "2v2"
+  },
+  "team": [
+   {
+    "tag": "#ME123",
+    "name": "Me",
+    "cards": [
+     {
+      "name": "Hog Rider",
+      "id": 0,
+      "level": 11
+     },
+     {
+      "name": "Musketeer",
+      "id": 1,
+      "level": 11
+     },
+     {
+      "name": "Fireball",
+      "id": 2,
+      "level": 11
+     },
+     {
+      "name": "The Log",
+      "id": 3,
+      "level": 11
+     },
+     {
+      "name": "Ice Golem",
+      "id": 4,
+      "level": 11
+     },
+     {
+      "name": "Skeletons",
+      "id": 5,
+      "level": 11
+     },
+     {
+      "name": "Ice Spirit",
+      "id": 6,
+      "level": 11
+     },
+     {
+      "name": "Cannon",
+      "id": 7,
+      "level": 11
+     }
+    ]
+   },
+   {
+    "tag": "#X",
+    "name": "x",
+    "cards": []
+   }
+  ],
+  "opponent": [
+   {
+    "tag": "#Y",
+    "name": "y",
+    "cards": []
+   },
+   {
+    "tag": "#Z",
+    "name": "z",
+    "cards": []
+   }
+  ]
+ }
+]

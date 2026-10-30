@@ -1,0 +1,599 @@
+{
+ "items": [
+  {
+   "name": "Knight",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Archers",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Goblins",
+   "elixirCost": 2,
+   "rarity": "common"
+  },
+  {
+   "name": "Giant",
+   "elixirCost": 5,
+   "rarity": "rare"
+  },
+  {
+   "name": "P.E.K.K.A",
+   "elixirCost": 7,
+   "rarity": "epic"
+  },
+  {
+   "name": "Minions",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Balloon",
+   "elixirCost": 5,
+   "rarity": "epic"
+  },
+  {
+   "name": "Witch",
+   "elixirCost": 5,
+   "rarity": "epic"
+  },
+  {
+   "name": "Barbarians",
+   "elixirCost": 5,
+   "rarity": "common"
+  },
+  {
+   "name": "Golem",
+   "elixirCost": 8,
+   "rarity": "epic"
+  },
+  {
+   "name": "Skeletons",
+   "elixirCost": 1,
+   "rarity": "common"
+  },
+  {
+   "name": "Valkyrie",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Skeleton Army",
+   "elixirCost": 3,
+   "rarity": "epic"
+  },
+  {
+   "name": "Bomber",
+   "elixirCost": 2,
+   "rarity": "common"
+  },
+  {
+   "name": "Musketeer",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Baby Dragon",
+   "elixirCost": 4,
+   "rarity": "epic"
+  },
+  {
+   "name": "Prince",
+   "elixirCost": 5,
+   "rarity": "epic"
+  },
+  {
+   "name": "Wizard",
+   "elixirCost": 5,
+   "rarity": "rare"
+  },
+  {
+   "name": "Mini P.E.K.K.A",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Spear Goblins",
+   "elixirCost": 2,
+   "rarity": "common"
+  },
+  {
+   "name": "Giant Skeleton",
+   "elixirCost": 6,
+   "rarity": "epic"
+  },
+  {
+   "name": "Hog Rider",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Minion Horde",
+   "elixirCost": 5,
+   "rarity": "common"
+  },
+  {
+   "name": "Ice Wizard",
+   "elixirCost": 3,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Royal Giant",
+   "elixirCost": 6,
+   "rarity": "common"
+  },
+  {
+   "name": "Guards",
+   "elixirCost": 3,
+   "rarity": "epic"
+  },
+  {
+   "name": "Princess",
+   "elixirCost": 3,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Dark Prince",
+   "elixirCost": 4,
+   "rarity": "epic"
+  },
+  {
+   "name": "Three Musketeers",
+   "elixirCost": 9,
+   "rarity": "rare"
+  },
+  {
+   "name": "Lava Hound",
+   "elixirCost": 7,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Ice Spirit",
+   "elixirCost": 1,
+   "rarity": "common"
+  },
+  {
+   "name": "Fire Spirit",
+   "elixirCost": 1,
+   "rarity": "common"
+  },
+  {
+   "name": "Miner",
+   "elixirCost": 3,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Sparky",
+   "elixirCost": 6,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Bowler",
+   "elixirCost": 5,
+   "rarity": "epic"
+  },
+  {
+   "name": "Lumberjack",
+   "elixirCost": 4,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Battle Ram",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Inferno Dragon",
+   "elixirCost": 4,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Ice Golem",
+   "elixirCost": 2,
+   "rarity": "rare"
+  },
+  {
+   "name": "Mega Minion",
+   "elixirCost": 3,
+   "rarity": "rare"
+  },
+  {
+   "name": "Dart Goblin",
+   "elixirCost": 3,
+   "rarity": "rare"
+  },
+  {
+   "name": "Goblin Gang",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Electro Wizard",
+   "elixirCost": 4,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Elite Barbarians",
+   "elixirCost": 6,
+   "rarity": "common"
+  },
+  {
+   "name": "Hunter",
+   "elixirCost": 4,
+   "rarity": "epic"
+  },
+  {
+   "name": "Executioner",
+   "elixirCost": 5,
+   "rarity": "epic"
+  },
+  {
+   "name": "Bandit",
+   "elixirCost": 3,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Royal Recruits",
+   "elixirCost": 7,
+   "rarity": "common"
+  },
+  {
+   "name": "Night Witch",
+   "elixirCost": 4,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Bats",
+   "elixirCost": 2,
+   "rarity": "common"
+  },
+  {
+   "name": "Royal Ghost",
+   "elixirCost": 3,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Ram Rider",
+   "elixirCost": 5,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Zappies",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Rascals",
+   "elixirCost": 5,
+   "rarity": "common"
+  },
+  {
+   "name": "Cannon Cart",
+   "elixirCost": 5,
+   "rarity": "epic"
+  },
+  {
+   "name": "Mega Knight",
+   "elixirCost": 7,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Skeleton Barrel",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Flying Machine",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Wall Breakers",
+   "elixirCost": 2,
+   "rarity": "epic"
+  },
+  {
+   "name": "Royal Hogs",
+   "elixirCost": 5,
+   "rarity": "rare"
+  },
+  {
+   "name": "Goblin Giant",
+   "elixirCost": 6,
+   "rarity": "epic"
+  },
+  {
+   "name": "Fisherman",
+   "elixirCost": 3,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Magic Archer",
+   "elixirCost": 4,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Electro Dragon",
+   "elixirCost": 5,
+   "rarity": "epic"
+  },
+  {
+   "name": "Firecracker",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Mighty Miner",
+   "elixirCost": 4,
+   "rarity": "champion"
+  },
+  {
+   "name": "Elixir Golem",
+   "elixirCost": 3,
+   "rarity": "rare"
+  },
+  {
+   "name": "Battle Healer",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Skeleton King",
+   "elixirCost": 4,
+   "rarity": "champion"
+  },
+  {
+   "name": "Archer Queen",
+   "elixirCost": 5,
+   "rarity": "champion"
+  },
+  {
+   "name": "Golden Knight",
+   "elixirCost": 4,
+   "rarity": "champion"
+  },
+  {
+   "name": "Monk",
+   "elixirCost": 5,
+   "rarity": "champion"
+  },
+  {
+   "name": "Skeleton Dragons",
+   "elixirCost": 4,
+   "rarity": "common"
+  },
+  {
+   "name": "Mother Witch",
+   "elixirCost": 4,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Electro Spirit",
+   "elixirCost": 1,
+   "rarity": "common"
+  },
+  {
+   "name": "Electro Giant",
+   "elixirCost": 7,
+   "rarity": "epic"
+  },
+  {
+   "name": "Phoenix",
+   "elixirCost": 4,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Little Prince",
+   "elixirCost": 3,
+   "rarity": "champion"
+  },
+  {
+   "name": "Goblin Demolisher",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Goblin Machine",
+   "elixirCost": 5,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Suspicious Bush",
+   "elixirCost": 2,
+   "rarity": "rare"
+  },
+  {
+   "name": "Goblinstein",
+   "elixirCost": 5,
+   "rarity": "champion"
+  },
+  {
+   "name": "Rune Giant",
+   "elixirCost": 4,
+   "rarity": "epic"
+  },
+  {
+   "name": "Berserker",
+   "elixirCost": 2,
+   "rarity": "common"
+  },
+  {
+   "name": "Boss Bandit",
+   "elixirCost": 6,
+   "rarity": "champion"
+  },
+  {
+   "name": "Arrows",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Fireball",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Rocket",
+   "elixirCost": 6,
+   "rarity": "rare"
+  },
+  {
+   "name": "Lightning",
+   "elixirCost": 6,
+   "rarity": "epic"
+  },
+  {
+   "name": "Zap",
+   "elixirCost": 2,
+   "rarity": "common"
+  },
+  {
+   "name": "Poison",
+   "elixirCost": 4,
+   "rarity": "epic"
+  },
+  {
+   "name": "Freeze",
+   "elixirCost": 4,
+   "rarity": "epic"
+  },
+  {
+   "name": "Mirror",
+   "elixirCost": 1,
+   "rarity": "epic"
+  },
+  {
+   "name": "Rage",
+   "elixirCost": 2,
+   "rarity": "epic"
+  },
+  {
+   "name": "Clone",
+   "elixirCost": 3,
+   "rarity": "epic"
+  },
+  {
+   "name": "Tornado",
+   "elixirCost": 3,
+   "rarity": "epic"
+  },
+  {
+   "name": "The Log",
+   "elixirCost": 2,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Graveyard",
+   "elixirCost": 5,
+   "rarity": "legendary"
+  },
+  {
+   "name": "Earthquake",
+   "elixirCost": 3,
+   "rarity": "rare"
+  },
+  {
+   "name": "Barbarian Barrel",
+   "elixirCost": 2,
+   "rarity": "epic"
+  },
+  {
+   "name": "Heal Spirit",
+   "elixirCost": 1,
+   "rarity": "rare"
+  },
+  {
+   "name": "Giant Snowball",
+   "elixirCost": 2,
+   "rarity": "common"
+  },
+  {
+   "name": "Royal Delivery",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Goblin Curse",
+   "elixirCost": 2,
+   "rarity": "epic"
+  },
+  {
+   "name": "Void",
+   "elixirCost": 3,
+   "rarity": "epic"
+  },
+  {
+   "name": "Goblin Barrel",
+   "elixirCost": 3,
+   "rarity": "epic"
+  },
+  {
+   "name": "Cannon",
+   "elixirCost": 3,
+   "rarity": "common"
+  },
+  {
+   "name": "Goblin Hut",
+   "elixirCost": 5,
+   "rarity": "rare"
+  },
+  {
+   "name": "Mortar",
+   "elixirCost": 4,
+   "rarity": "common"
+  },
+  {
+   "name": "Inferno Tower",
+   "elixirCost": 5,
+   "rarity": "rare"
+  },
+  {
+   "name": "Bomb Tower",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Barbarian Hut",
+   "elixirCost": 6,
+   "rarity": "rare"
+  },
+  {
+   "name": "Tesla",
+   "elixirCost": 4,
+   "rarity": "common"
+  },
+  {
+   "name": "Elixir Collector",
+   "elixirCost": 6,
+   "rarity": "rare"
+  },
+  {
+   "name": "X-Bow",
+   "elixirCost": 6,
+   "rarity": "epic"
+  },
+  {
+   "name": "Tombstone",
+   "elixirCost": 3,
+   "rarity": "rare"
+  },
+  {
+   "name": "Furnace",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Goblin Cage",
+   "elixirCost": 4,
+   "rarity": "rare"
+  },
+  {
+   "name": "Goblin Drill",
+   "elixirCost": 4,
+   "rarity": "epic"
+  }
+ ]
+}

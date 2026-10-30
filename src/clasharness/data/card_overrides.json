@@ -1,0 +1,20 @@
+{
+  "_comment": "Values the official API does not expose. Edit if Supercell rebalances.",
+  "mirror": {"key": "mirror", "extra_cost": 1},
+  "champion_ability_cost": {
+    "archer-queen": 1,
+    "golden-knight": 1,
+    "skeleton-king": 2,
+    "mighty-miner": 1,
+    "monk": 1,
+    "little-prince": 3,
+    "goblinstein": 2,
+    "boss-bandit": 1
+  },
+  "elixir_collector": {
+    "key": "elixir-collector",
+    "interval_seconds": 9.0,
+    "lifetime_seconds": 86.0,
+    "first_after_seconds": 9.0
+  }
+}
