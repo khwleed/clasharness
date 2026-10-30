@@ -19,10 +19,11 @@ DEFAULTS: dict[str, Any] = {
         "my_tag": "",
         "requests_per_second": 5.0,
     },
-    "anthropic": {
-        "api_key": "",  # falls back to ANTHROPIC_API_KEY / `ant auth login`
-        "model": "claude-opus-5-5",
-        "effort": "low",
+    "openrouter": {
+        "api_key": "",  # falls back to OPENROUTER_API_KEY
+        "base_url": "https://openrouter.ai/api/v1",
+        # Must accept image input; the deepseek-flash-latest alias is text-only.
+        "model": "deepseek/deepseek-v4.1-flash",
     },
     "server": {"host": "127.0.0.1", "port": 8765, "open_browser": True},
     "storage": {"dir": "var"},
@@ -114,8 +115,8 @@ class Config:
         return d
 
     @property
-    def anthropic_key(self) -> str | None:
-        return self.raw["anthropic"]["api_key"] or os.environ.get("ANTHROPIC_API_KEY") or None
+    def openrouter_key(self) -> str | None:
+        return self.raw["openrouter"]["api_key"] or os.environ.get("OPENROUTER_API_KEY") or None
 
 
 def load_config(path: str | os.PathLike | None = None) -> Config:

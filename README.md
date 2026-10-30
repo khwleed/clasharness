@@ -6,7 +6,7 @@ A second-screen harness for playing Clash Royale from your computer:
 - **Track elixir for both players.** It follows the match clock (x1, then x2, then overtime x2/x3), the 10 elixir cap, leaked elixir, Mirror, champion abilities and Elixir Collector.
 - **Track both hands and card cycles** from the cards you log. Your hand is known exactly after 4 plays. For the opponent it shows which cards they *can't* have right now.
 - **Predict the opponent's unseen cards** from a dataset of real ranked decks, built from the official API. It also uses the opponent's own recent decks once it knows who they are.
-- **Identify the opponent automatically.** At match start it takes a screenshot of the phone, Claude reads the opponent's name and clan, and the app finds their player tag. That works without a clan too, through a local player index.
+- **Identify the opponent automatically.** At match start it takes a screenshot of the phone, a vision model on OpenRouter (DeepSeek V4.1 Flash by default) reads the opponent's name and clan, and the app finds their player tag. That works without a clan too, through a local player index.
 - **Save every match** to SQLite and match it up with your battle log afterwards (result, crowns, the opponent's full deck).
 
 Card logging is manual: one keypress per card, using global hotkeys that work while scrcpy has focus.
@@ -17,7 +17,7 @@ global hotkeys ─┐
 browser UI ─────┼─> event log ─> elixir / cycle / prediction ─> live UI (localhost:8765)
 search popup ───┘
 Clash Royale API (via RoyaleAPI proxy) ─> decks, players, battle logs ─> SQLite
-Claude vision ─> opponent name ─> player tag ─> their recent decks
+OpenRouter vision ─> opponent name ─> player tag ─> their recent decks
 ```
 
 ## Setup
@@ -63,9 +63,9 @@ Developer keys are locked to IP addresses. Your home IP changes, so route throug
 python -m clasharness check
 ```
 
-### 3. Anthropic API key (for reading the opponent's name)
+### 3. OpenRouter API key (for reading the opponent's name)
 
-Put a key in `config.toml` under `[anthropic]`, or export `ANTHROPIC_API_KEY`. Each match makes one small image request. It defaults to `claude-opus-5-5` at low effort, and you can change `model` to trade cost against accuracy. If a safety classifier declines a request, it's retried on a fallback model (server-side `fallbacks: "default"`).
+Create a key at <https://openrouter.ai/keys>. Put it in `config.toml` under `[openrouter]`, or export `OPENROUTER_API_KEY`. Each match makes one small image request to `deepseek/deepseek-v4.1-flash`, which costs a tiny fraction of a cent. You can set `model` to any OpenRouter model that accepts images. Avoid the `deepseek/deepseek-flash-latest` alias, which is text-only.
 
 Without a key, everything else still works: paste the opponent's tag by hand, or skip it.
 
@@ -106,7 +106,7 @@ You can rebind any of these in `[hotkeys]`. Everything can also be clicked in th
 
 The opponent's first appearance of a card is the slow part. Usually it's in the predicted list (Alt+Q…R). If not, press Alt+Space, type a few letters and press Enter.
 
-**Who is the opponent?** About 1.5 s after Start, the harness takes a screenshot through `adb` and crops the top banner. Claude reads the name and clan, and the app looks for the tag in this order:
+**Who is the opponent?** About 1.5 s after Start, the harness takes a screenshot through `adb` and crops the top banner. the vision model reads the name and clan, and the app looks for the tag in this order:
 
 1. **Local player index.** Every player seen in any battle log or clan member list is stored here, so it works for players with no clan. It grows as you crawl and play.
 2. **Clan search.** Search clans by the clan name, then match the name against members.
@@ -129,7 +129,7 @@ After **End**, the harness waits about 20 s, finds the battle in your battle log
 - `match/state.py`: the event log. The UI state is recomputed from it, which is why undo is free.
 - `predict/model.py`: P(card | seen) over decks containing every seen card, with a fallback to similarity-weighted decks and a blend with the opponent's own history.
 - `predict/crawler.py`, `db.py`: battle log crawl, the deck dataset and the player index in SQLite (`var/clasharness.db`).
-- `vision/`: adb screenshot → crop → Claude structured output `{player_name, clan_name}` → tag resolver.
+- `vision/`: adb screenshot → crop → OpenRouter vision model returning JSON `{player_name, clan_name}` → tag resolver.
 
 ## Development
 

@@ -1,12 +1,13 @@
 import io
-from types import SimpleNamespace
+import json
 
+import httpx
 import pytest
 from PIL import Image
 
 from clasharness.predict.crawler import ingest_battlelog
 from clasharness.vision.capture import crop
-from clasharness.vision.reader import BannerRead, BannerReader, ReadError
+from clasharness.vision.reader import BannerReader, ReadError, parse_reply
 from clasharness.vision.resolve import resolve
 
 
@@ -46,31 +47,41 @@ def test_crop_uses_fractions():
     assert out.size == (500, 200)
 
 
-class FakeMessages:
-    def __init__(self, response):
-        self.response = response
-        self.kwargs = None
-
-    async def parse(self, **kwargs):
-        self.kwargs = kwargs
-        return self.response
+def openrouter(reply: dict, status: int = 200, seen: list | None = None):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if seen is not None:
+            seen.append(json.loads(request.content))
+        return httpx.Response(status, json=reply)
+    return httpx.MockTransport(handler)
 
 
-def fake_client(response):
-    messages = FakeMessages(response)
-    return SimpleNamespace(beta=SimpleNamespace(messages=messages)), messages
+def completion(content: str) -> dict:
+    return {"choices": [{"message": {"role": "assistant", "content": content}}]}
 
 
-async def test_reader_returns_parsed_output():
-    parsed = BannerRead(player_name="lone wolf ☆", clan_name="", confident=True)
-    client, messages = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=parsed))
-    out = await BannerReader("claude-opus-5-5", client=client).read(b"\x89PNG...")
-    assert out.player_name == "lone wolf ☆"
-    assert messages.kwargs["output_format"] is BannerRead
-    assert messages.kwargs["messages"][0]["content"][0]["type"] == "image"
+async def test_reader_parses_openrouter_reply():
+    seen = []
+    reply = completion('{"player_name": "lone wolf ☆", "clan_name": "", "confident": true}')
+    reader = BannerReader("deepseek/deepseek-v4.1-flash", "key", transport=openrouter(reply, seen=seen))
+    out = await reader.read(b"\x89PNG...")
+    assert out.player_name == "lone wolf ☆" and out.clan_name == ""
+    body = seen[0]
+    assert body["model"] == "deepseek/deepseek-v4.1-flash"
+    assert body["messages"][0]["content"][1]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert body["response_format"]["type"] == "json_schema"
 
 
-async def test_reader_surfaces_refusal():
-    client, _ = fake_client(SimpleNamespace(stop_reason="refusal", parsed_output=None))
+def test_parse_reply_tolerates_code_fences():
+    out = parse_reply('Sure:\n```json\n{"player_name": "Bob", "clan_name": "Clan", "confident": false}\n```')
+    assert out.player_name == "Bob" and not out.confident
+
+
+async def test_reader_surfaces_api_errors():
+    reader = BannerReader("m", "key", transport=openrouter({"error": {"code": 402, "message": "Insufficient credits"}}, 402))
+    with pytest.raises(ReadError, match="Insufficient credits"):
+        await reader.read(b"x")
+
+
+def test_reader_needs_key():
     with pytest.raises(ReadError):
-        await BannerReader("claude-opus-5-5", client=client).read(b"x")
+        BannerReader("m", None)

@@ -439,7 +439,8 @@ class Harness:
         self.vision = {"status": "reading"}
         self.touch()
         try:
-            reader = BannerReader(self.cfg["anthropic"]["model"], self.cfg["anthropic"]["effort"], self.cfg.anthropic_key)
+            orc = self.cfg["openrouter"]
+            reader = BannerReader(orc["model"], self.cfg.openrouter_key, orc["base_url"])
             read = await reader.read(banner)
         except ReadError as e:
             self.vision = {"status": "error", "error": str(e)}

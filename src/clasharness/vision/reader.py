@@ -1,18 +1,22 @@
-"""Read the opponent's name and clan from the banner crop with Claude vision."""
+"""Read the opponent's name and clan from the banner crop with a vision model on OpenRouter."""
 
 from __future__ import annotations
 
 import base64
+import json
+import re
 
-import anthropic
-from pydantic import BaseModel, Field
+import httpx
+from pydantic import BaseModel, Field, ValidationError
 
 PROMPT = """This is the top of a Clash Royale battle screen. It shows the opponent's \
 player name and, under it, their clan name (absent if they have no clan).
 
 Transcribe both exactly as displayed: keep capitalization, spacing, symbols, emoji and \
 non-Latin characters. Use an empty string for clan_name if there's no clan. Set \
-confident to false if either name is cut off, blurred, or you're guessing any character."""
+confident to false if either name is cut off, blurred, or you're guessing any character.
+
+Reply with only a JSON object: {"player_name": "...", "clan_name": "...", "confident": true}"""
 
 
 class BannerRead(BaseModel):
@@ -25,46 +29,73 @@ class ReadError(Exception):
     pass
 
 
+def _response_format() -> dict:
+    schema = BannerRead.model_json_schema()
+    schema["additionalProperties"] = False
+    return {"type": "json_schema", "json_schema": {"name": "banner_read", "strict": True, "schema": schema}}
+
+
+def parse_reply(text: str) -> BannerRead:
+    """Accept a bare JSON object, or one wrapped in a code fence or surrounding prose."""
+    match = re.search(r"\{.*\}", text or "", re.S)
+    if not match:
+        raise ReadError(f"model didn't return JSON: {text[:120]!r}")
+    try:
+        return BannerRead.model_validate(json.loads(match.group(0)))
+    except (ValueError, ValidationError) as e:
+        raise ReadError(f"couldn't parse model reply: {e}") from e
+
+
 class BannerReader:
-    def __init__(self, model: str, effort: str = "low", api_key: str | None = None,
-                 client: anthropic.AsyncAnthropic | None = None):
+    def __init__(self, model: str, api_key: str | None,
+                 base_url: str = "https://openrouter.ai/api/v1",
+                 transport: httpx.AsyncBaseTransport | None = None):
+        if not api_key:
+            raise ReadError("no OpenRouter API key (set [openrouter].api_key or OPENROUTER_API_KEY)")
         self.model = model
-        self.effort = effort
-        # With no key, the SDK falls back to ANTHROPIC_API_KEY or an `ant auth login` profile.
-        self.client = client or (anthropic.AsyncAnthropic(api_key=api_key) if api_key else anthropic.AsyncAnthropic())
+        self.client = httpx.AsyncClient(
+            base_url=base_url.rstrip("/"),
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                # Optional OpenRouter attribution headers.
+                "HTTP-Referer": "https://github.com/khwleed/clasharness",
+                "X-Title": "clasharness",
+            },
+            timeout=30.0,
+            transport=transport,
+        )
 
     async def read(self, png: bytes) -> BannerRead:
+        image_url = "data:image/png;base64," + base64.standard_b64encode(png).decode()
+        body = {
+            "model": self.model,
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": PROMPT},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ],
+            }],
+            "response_format": _response_format(),
+            "temperature": 0,
+            "max_tokens": 300,
+        }
         try:
-            response = await self.client.beta.messages.parse(
-                model=self.model,
-                max_tokens=2048,
-                output_config={"effort": self.effort},
-                output_format=BannerRead,
-                # Retry on a substitute model if a safety classifier declines.
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
-                messages=[{
-                    "role": "user",
-                    "content": [
-                        {"type": "image", "source": {
-                            "type": "base64", "media_type": "image/png",
-                            "data": base64.standard_b64encode(png).decode(),
-                        }},
-                        {"type": "text", "text": PROMPT},
-                    ],
-                }],
-            )
-        except anthropic.AuthenticationError as e:
-            raise ReadError("Anthropic API key rejected") from e
-        except anthropic.RateLimitError as e:
-            raise ReadError("Anthropic API rate limited; try again shortly") from e
-        except anthropic.APIStatusError as e:
-            raise ReadError(f"Anthropic API error {e.status_code}: {e.message}") from e
-        except anthropic.APIConnectionError as e:
-            raise ReadError("couldn't reach the Anthropic API") from e
+            r = await self.client.post("/chat/completions", json=body)
+        except httpx.HTTPError as e:
+            raise ReadError(f"couldn't reach OpenRouter: {e}") from e
+        finally:
+            await self.client.aclose()
 
-        if response.stop_reason == "refusal":
-            raise ReadError("the model declined to read this image")
-        if response.parsed_output is None:
-            raise ReadError(f"no structured output (stop_reason={response.stop_reason})")
-        return response.parsed_output
+        try:
+            data = r.json()
+        except ValueError as e:
+            raise ReadError(f"OpenRouter returned {r.status_code}: {r.text[:200]}") from e
+        if r.status_code != 200 or "error" in data:
+            err = data.get("error")
+            err = err if isinstance(err, dict) else {"message": str(err or r.text[:200])}
+            raise ReadError(f"OpenRouter error {err.get('code', r.status_code)}: {err.get('message')}")
+        choices = data.get("choices") or []
+        if not choices:
+            raise ReadError("OpenRouter returned no choices")
+        return parse_reply(choices[0].get("message", {}).get("content") or "")

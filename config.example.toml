@@ -8,12 +8,13 @@ token = ""
 base_url = "https://proxy.royaleapi.dev/v1"
 my_tag = "#YOURTAG"
 
-[anthropic]
-# Used to read the opponent's name off the screen. Leave empty to use
-# ANTHROPIC_API_KEY (or an `ant auth login` profile).
+[openrouter]
+# Used to read the opponent's name off the screen. Leave empty to use OPENROUTER_API_KEY.
 api_key = ""
-model = "claude-opus-5-5"
-effort = "low"
+base_url = "https://openrouter.ai/api/v1"
+# Any OpenRouter model with image input works. Don't use deepseek/deepseek-flash-latest:
+# that alias is text-only.
+model = "deepseek/deepseek-v4.1-flash"
 
 [server]
 host = "127.0.0.1"
