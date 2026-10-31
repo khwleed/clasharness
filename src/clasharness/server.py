@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import struct
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -93,6 +94,44 @@ def create_app(harness: Harness, on_startup=None) -> FastAPI:
                 await asyncio.sleep(0.1)
         except (WebSocketDisconnect, RuntimeError):
             pass
+
+    @app.websocket("/ws/phone")
+    async def phone_ws(socket: WebSocket):
+        """Phone video out (binary: 1 kind byte + H.264 packet), status as JSON, taps in as JSON."""
+        await socket.accept()
+        phone = harness.phone
+        if phone is None:
+            await socket.send_json({"type": "status", "state": "disabled",
+                                    "detail": "The embedded phone is off ([phone].embed in config.toml)."})
+            await socket.close()
+            return
+        queue = phone.subscribe()
+
+        async def outgoing():
+            while True:
+                item = await queue.get()
+                if isinstance(item, dict):
+                    await socket.send_json(item)
+                else:
+                    await socket.send_bytes(item)
+
+        async def incoming():
+            while True:
+                msg = await socket.receive_json()
+                if isinstance(msg, dict):
+                    try:
+                        phone.handle_input(msg)
+                    except (KeyError, TypeError, ValueError, OverflowError, struct.error):
+                        pass
+
+        tasks = [asyncio.create_task(outgoing()), asyncio.create_task(incoming())]
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for t in tasks:
+                t.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            phone.unsubscribe(queue)
 
     app.mount("/static", StaticFiles(directory=WEB), name="static")
     return app

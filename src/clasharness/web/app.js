@@ -118,7 +118,8 @@ function render() {
   const chip = (ok, text, title = "") => `<span class="chip ${ok ? "ok" : "bad"}" title="${esc(title)}">${esc(text)}</span>`;
   $("chips").innerHTML = [
     chip(s.api.enabled, s.api.enabled ? "API" : "API off", "Clash Royale API token"),
-    chip(s.scrcpy.state === "running", `scrcpy ${s.scrcpy.state}`),
+    s.phone ? chip(s.phone.state === "streaming", `phone ${s.phone.state}`, s.phone.detail)
+            : chip(s.scrcpy.state === "running", `scrcpy ${s.scrcpy.state}`),
     chip(s.dataset.decks_loaded > 0, `${s.dataset.decks_loaded} decks`, "decks in prediction dataset"),
   ].join("");
 

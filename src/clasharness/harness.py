@@ -26,6 +26,7 @@ from .match.elixir import Rules
 from .match.state import SIDES, Match
 from .predict.crawler import crawl, ingest_battlelog, seed_tags
 from .predict.model import DeckIndex, Prediction, predict
+from .phone import PhoneMirror
 from .scrcpy import Scrcpy
 
 log = logging.getLogger(__name__)
@@ -44,6 +45,10 @@ class Harness:
         self.catalog = Catalog.load(self.var / "cards.json")
         self.rules = Rules.from_config(config["elixir"])
         self.scrcpy = Scrcpy(config["scrcpy"]["path"], config["scrcpy"]["args"])
+        self.phone = (PhoneMirror(config["phone"], config["scrcpy"]["path"], config["vision"]["adb_path"])
+                      if config["phone"]["embed"] else None)
+        if self.phone:
+            self.phone.on_change = self.touch
         self.lock = threading.RLock()
         self.loop: asyncio.AbstractEventLoop | None = None
         self.version = 0
@@ -78,10 +83,14 @@ class Harness:
                 self.spawn(self._trickle_loop())
         else:
             self.note("No Clash Royale API token: using the offline card list and no predictions.", "warn")
-        if self.cfg["scrcpy"]["enabled"] and self.cfg["scrcpy"]["autostart"]:
+        if self.phone:
+            self.phone.start()
+        elif self.cfg["scrcpy"]["enabled"] and self.cfg["scrcpy"]["autostart"]:
             self.scrcpy.start()
 
     async def shutdown(self) -> None:
+        if self.phone:
+            await self.phone.stop()
         for t in list(self._tasks):
             t.cancel()
         self.scrcpy.stop()
@@ -417,6 +426,7 @@ class Harness:
                 "dataset": {"decks_loaded": len(self.meta), **self._db_stats()},
                 "api": {"enabled": self.api.enabled},
                 "scrcpy": self.scrcpy.status(),
+                "phone": self.phone.status() if self.phone else None,
                 "messages": self.messages[-8:],
                 "hotkeys": self.cfg["hotkeys"],
                 "coach": self.coach,

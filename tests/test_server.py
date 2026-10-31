@@ -20,6 +20,7 @@ def client(tmp_path, api):
         "api": {"my_tag": "#ME123"},
         "vision": {"enabled": False},
         "scrcpy": {"enabled": False},
+        "phone": {"embed": False},
         "predict": {"trickle_players": 0, "reconcile_delay_seconds": 0, "min_support": 1},
     }))
     harness = Harness(cfg, api=api)

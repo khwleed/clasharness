@@ -87,6 +87,18 @@ DEFAULTS: dict[str, Any] = {
         "path": "scrcpy",
         "args": ["--stay-awake", "--window-title=Clash Royale", "--max-size=1600"],
     },
+    # Show the phone inside the app (needs scrcpy installed: it uses scrcpy's phone-side server).
+    "phone": {
+        "embed": True,
+        "serial": "",           # adb serial, only needed with several phones/emulators connected
+        "max_size": 1600,       # longest side of the video, in pixels
+        "bit_rate": 8_000_000,
+        "max_fps": 60,
+        "keyframe_interval": 1,  # seconds
+        "stay_awake": True,
+        "server_path": "",      # scrcpy-server file; found next to scrcpy when empty
+        "server_version": "",   # its version; read from `scrcpy --version` when empty
+    },
     "elixir": {
         "start": 5.0,
         "max": 10.0,

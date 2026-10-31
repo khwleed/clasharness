@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One-command launcher: sets things up on first run, then starts the harness.
-#   ./run.sh                 start the app
+#   ./run.sh                 start the app (UI in your browser)
+#   ./run.sh desktop         start it as a desktop app, with the phone screen inside
 #   ./run.sh check           check your Clash Royale API key and tag
 #   ./run.sh crawl -n 300    build the opponent-prediction dataset
 set -euo pipefail
@@ -37,10 +38,10 @@ if [ ! -f "$STAMP" ] || [ pyproject.toml -nt "$STAMP" ]; then
   fi
   echo "Installing clasharness…"
   if command -v uv >/dev/null 2>&1; then
-    uv pip install --quiet --python .venv/bin/python -e .
+    uv pip install --quiet --python .venv/bin/python -e '.[desktop]'
   else
     .venv/bin/python -m pip install --quiet --upgrade pip
-    .venv/bin/python -m pip install --quiet -e .
+    .venv/bin/python -m pip install --quiet -e '.[desktop]'
   fi
   touch "$STAMP"
 fi
@@ -83,4 +84,9 @@ if [ -t 0 ]; then
   stty -ixon susp undef dsusp undef 2>/dev/null || stty -ixon susp undef
 fi
 
-.venv/bin/python -m clasharness "$@"
+if [ "${1:-}" = desktop ]; then
+  shift
+  .venv/bin/python desktop/app.py "$@"
+else
+  .venv/bin/python -m clasharness "$@"
+fi

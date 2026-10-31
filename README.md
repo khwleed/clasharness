@@ -2,17 +2,17 @@
 
 A second-screen harness for playing Clash Royale from your computer:
 
-- **Mirror and control your Android phone** with [scrcpy](https://github.com/Genymobile/scrcpy).
+- **Play on your Android phone from the app.** The phone's screen is streamed into the harness window and your clicks go back to the phone as taps. This uses [scrcpy](https://github.com/Genymobile/scrcpy)'s phone-side server, so there's no separate scrcpy window.
 - **Track elixir for both players.** It follows the match clock (x1, then x2, then overtime x2/x3), the 10 elixir cap, leaked elixir, Mirror, champion abilities and Elixir Collector.
 - **Track both hands and card cycles** from the cards you log. Your hand is known exactly after 4 plays. For the opponent it shows which cards they *can't* have right now.
 - **Predict the opponent's unseen cards** from a dataset of real ranked decks, built from the official API. It also uses the opponent's own recent decks once it knows who they are.
 - **Identify the opponent automatically.** At match start it takes a screenshot of the phone, a vision model on OpenRouter (DeepSeek V4.1 Flash by default) reads the opponent's name and clan, and the app finds their player tag. That works without a clan too, through a local player index.
 - **Save every match** to SQLite and match it up with your battle log afterwards (result, crowns, the opponent's full deck).
 
-Card logging is manual: one keypress per card, using global hotkeys that work while scrcpy has focus.
+Card logging is manual: one keypress per card, using global hotkeys that work whichever window has focus.
 
 ```
-phone ──USB/Wi-Fi──> scrcpy window (you play here)
+phone ──USB──> scrcpy-server ──H.264──> phone pane in the UI (you play here) ──taps──> phone
 global hotkeys ─┐
 browser UI ─────┼─> event log ─> elixir / cycle / prediction ─> live UI (localhost:8765)
 search popup ───┘
@@ -91,7 +91,29 @@ This starts from your own battle log and walks outward through opponents near yo
 ./run.sh
 ```
 
-This opens <http://127.0.0.1:8765> and, with `autostart = true`, starts scrcpy. Put the two windows side by side (or put the UI on a second monitor or a tablet on the same machine).
+This opens <http://127.0.0.1:8765> in your browser, with the phone's screen on the left. Click and drag on it to play.
+
+### 6. Or run it as a desktop app
+
+```bash
+./run.sh desktop
+```
+
+This opens the same UI in its own window instead of a browser tab. Closing the window quits. On macOS you can turn it into an app for the Dock and Spotlight:
+
+```bash
+desktop/make-mac-app.sh
+```
+
+That builds `~/Applications/Clash Harness.app`, which runs this checkout. See [`desktop/README.md`](desktop/README.md).
+
+### The phone screen
+
+- **Taps and swipes:** click or drag with the mouse or trackpad. **Back:** right-click the screen, or the Back button under it.
+- **It reconnects by itself** when you unplug and replug the phone, and it keeps the phone awake while connected.
+- **It needs scrcpy installed** (`brew install scrcpy`), because it uses the `scrcpy-server` file that comes with it. Settings are under `[phone]` in `config.toml` (size, bit rate, frame rate, and `serial` if several phones are connected).
+- **To use the old separate scrcpy window instead**, set `[phone] embed = false`. Then `[scrcpy] autostart` starts the window as before. You can also start it from Setup in the UI while the embedded screen is on, for example to type on the phone with your keyboard.
+- **Video decoding happens in the window** (WebCodecs). The macOS desktop app needs macOS 13.3 or newer; in a browser, use Chrome, Edge or Safari 16.4+.
 
 ## Playing with it
 
@@ -143,6 +165,8 @@ After **End**, the harness waits about 20 s, finds the battle in your battle log
 - `match/state.py`: the event log. The UI state is recomputed from it, which is why undo is free.
 - `predict/model.py`: P(card | seen) over decks containing every seen card, with a fallback to similarity-weighted decks and a blend with the opponent's own history.
 - `predict/crawler.py`, `db.py`: battle log crawl, the deck dataset and the player index in SQLite (`var/clasharness.db`).
+- `phone.py`, `web/phone.js`: the embedded phone. Python pushes `scrcpy-server` to the phone, reads its H.264 packets over an `adb forward` socket and relays them over `/ws/phone`. The page decodes them with WebCodecs and sends pointer events back, which become scrcpy touch messages.
+- `desktop/app.py`: the desktop window (pywebview) around the same server.
 - `vision/`: adb screenshot → crop → OpenRouter vision model returning JSON `{player_name, clan_name}` → tag resolver.
 
 ## Development
@@ -155,6 +179,6 @@ After **End**, the harness waits about 20 s, finds the battle in your battle log
 .venv/bin/pytest
 ```
 
-The tests cover elixir, cycle, prediction, the resolver, the vision reader (with a mocked client) and a full scripted match through the HTTP API against a fake Clash Royale server.
+The tests cover elixir, cycle, prediction, the resolver, the vision reader (with a mocked client), a full scripted match through the HTTP API against a fake Clash Royale server, and the phone stream end to end against a fake adb and a fake scrcpy server.
 
 Elixir rules and champion ability costs live in config and `src/clasharness/data/card_overrides.json`. Update them if Supercell rebalances. `cards_fallback.json` is only used until the API card list has been fetched.

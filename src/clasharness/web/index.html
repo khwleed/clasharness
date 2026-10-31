@@ -20,7 +20,19 @@
   <div class="chips" id="chips"></div>
 </header>
 
-<main class="layout">
+<main class="layout" id="layout">
+  <!-- The phone screen, streamed from the phone (shown once the server says it's on). -->
+  <section class="phone" id="phone" hidden>
+    <div class="phone-screen" id="phone-screen">
+      <canvas id="phone-canvas" aria-label="Phone screen"></canvas>
+      <div class="phone-msg" id="phone-msg">Connecting to your phone…</div>
+    </div>
+    <div class="phone-bar">
+      <span id="phone-device" class="muted small"></span>
+      <button id="phone-back" title="Android Back button (or right-click the screen)">◁ Back</button>
+    </div>
+  </section>
+
   <section class="board">
     <div class="side opp" id="side-opp">
       <div class="side-head">
@@ -131,5 +143,6 @@
 <div id="toast" class="toast"></div>
 <datalist id="card-names"></datalist>
 <script src="/static/app.js"></script>
+<script src="/static/phone.js"></script>
 </body>
 </html>

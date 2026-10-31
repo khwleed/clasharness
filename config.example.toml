@@ -21,6 +21,17 @@ host = "127.0.0.1"
 port = 8765
 open_browser = true
 
+[phone]
+# Show the phone's screen inside the app. Needs scrcpy installed (brew install scrcpy):
+# it uses the scrcpy-server file that comes with it. Set to false to use the separate
+# scrcpy window ([scrcpy] below) instead.
+embed = true
+max_size = 1600      # longest side of the video in pixels
+bit_rate = 8000000
+max_fps = 60
+# serial = "R5CX1234ABC"   # only if more than one phone/emulator is connected (see `adb devices`)
+
+# The separate scrcpy window. Only autostarts when [phone].embed is false.
 [scrcpy]
 enabled = true
 autostart = true

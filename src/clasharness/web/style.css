@@ -53,6 +53,21 @@ kbd { font: 11px ui-monospace, monospace; background: #0008; border: 1px solid v
 }
 .board { display: flex; flex-direction: column; gap: 14px; }
 
+/* Embedded phone screen: a column on the left, as tall as the window allows. */
+.layout.with-phone { grid-template-columns: auto minmax(0, 1.5fr) minmax(300px, 1fr); max-width: none; }
+.phone { position: sticky; top: 72px; align-self: start; display: flex; flex-direction: column; gap: 6px; }
+.phone-screen { position: relative; height: calc(100vh - 124px); min-height: 320px; aspect-ratio: var(--phone-ar, 9 / 19.5); max-width: 42vw;
+  background: #000; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+#phone-canvas { display: block; width: 100%; height: 100%; object-fit: contain; touch-action: none; cursor: pointer; }
+.phone-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; text-align: center; color: var(--muted); background: #000c; }
+.phone-msg:empty { display: none; }
+.phone-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+@media (max-width: 900px) {
+  .layout.with-phone { grid-template-columns: 1fr; }
+  .phone { position: static; align-items: center; }
+  .phone-screen { height: 70vh; max-width: 100%; }
+}
+
 /* Coach mode: only the opponent's side, with bigger hand and elixir. */
 #coach-toggle[aria-pressed="true"] { background: var(--opp); border-color: var(--opp); color: #fff; font-weight: 600; }
 body.coach #side-me { display: none; }
