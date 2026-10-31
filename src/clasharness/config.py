@@ -98,6 +98,9 @@ DEFAULTS: dict[str, Any] = {
         "stay_awake": True,
         "server_path": "",      # scrcpy-server file; found next to scrcpy when empty
         "server_version": "",   # its version; read from `scrcpy --version` when empty
+        # Keys that tap the phone screen while the app has focus: [{key, x, y, name}], x/y as
+        # fractions of the screen. Usually set up in the UI (Tap keys under the phone).
+        "taps": [],
     },
     "elixir": {
         "start": 5.0,

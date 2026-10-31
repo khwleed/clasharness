@@ -62,6 +62,7 @@
       vw = canvas.width = frame.displayWidth;
       vh = canvas.height = frame.displayHeight;
       box.style.setProperty("--phone-ar", `${vw} / ${vh}`);
+      requestAnimationFrame(placeMarkers);
     }
     ctx.drawImage(frame, 0, 0);
     frame.close();
@@ -157,6 +158,11 @@
   }
 
   canvas.addEventListener("pointerdown", (e) => {
+    if (picking === "spot" && e.button === 0) {
+      e.preventDefault();
+      pickSpot(e);
+      return;
+    }
     if (!e.isPrimary || e.button !== 0 || !streaming || !vw) return;
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
@@ -178,6 +184,178 @@
     send({ t: "back" });
   });
   document.getElementById("phone-back").addEventListener("click", () => send({ t: "back" }));
+
+  // ---------- tap keys: plain keys that tap set spots, while this window has focus ----------
+  const editor = document.getElementById("tap-editor");
+  const help = document.getElementById("tap-help");
+  const list = document.getElementById("tap-list");
+  const markers = document.getElementById("tap-markers");
+  const toggle = document.getElementById("tap-toggle");
+  const addBtn = document.getElementById("tap-add");
+  const cancelBtn = document.getElementById("tap-cancel");
+  const screenBox = document.getElementById("phone-screen");
+
+  let taps = [];          // [{key, x, y, name}], x/y as fractions of the screen
+  let tapsJson = "";
+  let globalKeys = {};    // key -> what the app's own plain hotkeys use it for
+  let picking = null;     // null | "spot" (click the screen) | "key" (press a key)
+  let pending = null;     // {x, y} chosen in "spot"
+  let held = null;        // tap key currently held down
+  const HELP = "These keys tap their spot on the phone while this window has focus " +
+               "(not while typing in a box). Hold a key to hold the tap.";
+
+  const normKey = (e) => (e.key === " " ? "space" : e.key.toLowerCase());
+  const keyText = (k) => (k === "space" ? "Space" : k === "backspace" ? "⌫" : k.length === 1 ? k.toUpperCase() : k[0].toUpperCase() + k.slice(1));
+  const typing = (el) => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+  const RESERVED = new Set(["escape", "tab", "enter", "meta", "control", "alt", "shift", "capslock", "dead", "unidentified"]);
+
+  window.onPhoneState = (s) => {
+    globalKeys = {};
+    const hk = s.hotkeys || {};
+    const plain = (k) => (typeof k === "string" && !k.includes("+") ? k.replace(/[<>]/g, "") : null);
+    for (const k of hk.coach_opp || []) if (plain(k)) globalKeys[plain(k)] = "coach mode";
+    for (const k of hk.coach_hand || []) if (plain(k)) globalKeys[plain(k)] = "coach mode";
+    if (plain(hk.coach_undo)) globalKeys[plain(hk.coach_undo)] = "coach mode";
+    const json = JSON.stringify(s.phone_taps || []);
+    if (json !== tapsJson && !typing(document.activeElement)) {
+      tapsJson = json;
+      taps = s.phone_taps || [];
+      renderTaps();
+    }
+  };
+
+  async function saveTaps(next) {
+    const r = await command({ cmd: "set_taps", taps: next });
+    if (r) {
+      taps = r.taps;
+      tapsJson = JSON.stringify(taps);
+      renderTaps();
+    }
+  }
+
+  function renderTaps() {
+    list.innerHTML = taps.length ? taps.map((t, i) => `<div class="tap-row">
+        <kbd>${esc(keyText(t.key))}</kbd>
+        <input data-tap-name="${i}" value="${esc(t.name)}" placeholder="Name (optional)">
+        <button class="ghost" data-tap-del="${i}" title="Remove">×</button>
+        ${globalKeys[t.key] ? `<div class="warn-note">Also a ${esc(globalKeys[t.key])} key: both happen when coach mode is on.</div>` : ""}
+      </div>`).join("") : `<div class="muted small">No tap keys yet.</div>`;
+    setPicking(picking);
+    placeMarkers();
+  }
+
+  // Where the video sits inside the screen box (object-fit: contain).
+  function videoBox() {
+    const r = screenBox.getBoundingClientRect();
+    if (!vw) return { left: 0, top: 0, w: r.width, h: r.height };
+    const scale = Math.min(r.width / vw, r.height / vh);
+    return { left: (r.width - vw * scale) / 2, top: (r.height - vh * scale) / 2, w: vw * scale, h: vh * scale };
+  }
+
+  function placeMarkers() {
+    const b = videoBox();
+    const dot = (t, cls) => `<div class="tap-marker ${cls}" data-key="${esc(t.key || "")}"
+      style="left:${b.left + t.x * b.w}px;top:${b.top + t.y * b.h}px">${esc(t.key ? keyText(t.key) : "?")}</div>`;
+    markers.innerHTML = taps.map((t) => dot(t, "")).join("") + (pending ? dot(pending, "pending") : "");
+  }
+  window.addEventListener("resize", placeMarkers);
+
+  function setPicking(mode) {
+    picking = mode;
+    box.classList.toggle("picking", mode === "spot");
+    help.classList.toggle("active", !!mode);
+    help.textContent = mode === "spot" ? "Click the spot on the phone screen this key should tap."
+                     : mode === "key" ? "Now press the key for it (Esc to cancel). Pressing a key that's already set moves it here."
+                     : HELP;
+    addBtn.hidden = !!mode;
+    cancelBtn.hidden = !mode;
+  }
+
+  function cancelPick() {
+    pending = null;
+    setPicking(null);
+    placeMarkers();
+  }
+
+  function pickSpot(e) {
+    const r = canvas.getBoundingClientRect();
+    const b = videoBox();
+    const fx = (e.clientX - r.left - b.left) / b.w;
+    const fy = (e.clientY - r.top - b.top) / b.h;
+    if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return;
+    pending = { x: fx, y: fy };
+    setPicking("key");
+    placeMarkers();
+  }
+
+  function setEditing(on) {
+    editor.hidden = !on;
+    box.classList.toggle("editing", on);
+    toggle.setAttribute("aria-pressed", String(on));
+    if (!on) cancelPick();
+    requestAnimationFrame(placeMarkers);
+  }
+
+  toggle.addEventListener("click", () => setEditing(editor.hidden));
+  addBtn.addEventListener("click", () => setPicking("spot"));
+  cancelBtn.addEventListener("click", cancelPick);
+  list.addEventListener("click", (e) => {
+    const i = e.target.dataset?.tapDel;
+    if (i !== undefined) saveTaps(taps.filter((_, j) => j !== Number(i)));
+  });
+  list.addEventListener("change", (e) => {
+    const i = e.target.dataset?.tapName;
+    if (i !== undefined) saveTaps(taps.map((t, j) => (j === Number(i) ? { ...t, name: e.target.value } : t)));
+  });
+
+  function flash(key) {
+    const m = markers.querySelector(`.tap-marker[data-key="${CSS.escape(key)}"]`);
+    if (!m) return;
+    m.classList.add("hit");
+    setTimeout(() => m.classList.remove("hit"), 150);
+  }
+
+  function tapTouch(action, t) {
+    const x = Math.round(Math.min(1, Math.max(0, t.x)) * (vw - 1));
+    const y = Math.round(Math.min(1, Math.max(0, t.y)) * (vh - 1));
+    send({ t: "touch", a: action, x, y, w: vw, h: vh });
+  }
+
+  function releaseHeld() {
+    if (!held) return;
+    tapTouch(TOUCH_UP, held);
+    held = null;
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;  // leave modifier combos to the app's hotkeys
+    const key = normKey(e);
+    if (picking) {
+      if (key === "escape") { cancelPick(); e.preventDefault(); return; }
+      if (picking !== "key" || RESERVED.has(key) || typing(e.target)) return;
+      e.preventDefault();
+      const rest = taps.filter((t) => t.key !== key);
+      const old = taps.find((t) => t.key === key);
+      saveTaps([...rest, { key, x: pending.x, y: pending.y, name: old?.name || "" }]);
+      pending = null;
+      setPicking(null);
+      return;
+    }
+    if (typing(e.target)) return;
+    const t = taps.find((tap) => tap.key === key);
+    if (!t) return;
+    e.preventDefault();
+    if (e.repeat || touching || !streaming || !vw) return;
+    releaseHeld();  // one finger: a second key lifts the first
+    held = t;
+    tapTouch(TOUCH_DOWN, t);
+    flash(t.key);
+  });
+  document.addEventListener("keyup", (e) => {
+    if (held && normKey(e) === held.key) releaseHeld();
+  });
+  window.addEventListener("blur", releaseHeld);
+  setPicking(null);
 
   if (!("VideoDecoder" in window)) {
     show();

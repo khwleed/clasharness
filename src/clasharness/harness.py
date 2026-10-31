@@ -32,6 +32,31 @@ from .scrcpy import Scrcpy
 log = logging.getLogger(__name__)
 
 
+MAX_TAPS = 40
+
+
+def validate_taps(taps) -> list[dict]:
+    """Tap keys: [{key, x, y, name}], x/y as fractions of the phone screen."""
+    if not isinstance(taps, list) or len(taps) > MAX_TAPS:
+        raise ValueError(f"taps must be a list of at most {MAX_TAPS}")
+    out, keys = [], set()
+    for t in taps:
+        if not isinstance(t, dict):
+            raise ValueError("each tap must be an object")
+        key = str(t.get("key", "")).lower()
+        if not key or len(key) > 20 or key in keys:
+            raise ValueError(f"bad or duplicate tap key {key!r}")
+        try:
+            x, y = float(t.get("x", -1)), float(t.get("y", -1))
+        except (TypeError, ValueError) as e:
+            raise ValueError("tap x and y must be numbers") from e
+        if not (0 <= x <= 1 and 0 <= y <= 1):
+            raise ValueError("tap x and y must be between 0 and 1")
+        keys.add(key)
+        out.append({"key": key, "x": round(x, 4), "y": round(y, 4), "name": str(t.get("name") or "")[:40]})
+    return out
+
+
 class CommandError(Exception):
     pass
 
@@ -59,6 +84,13 @@ class Harness:
         self.my_deck: list[str] = state.get("my_deck", [])
         self.my_trophies: int | None = state.get("my_trophies")
         self.coach: bool = bool(state.get("coach", False))
+        # Keys that tap spots on the phone screen. Saved from the UI; config seeds them.
+        taps = state["taps"] if "taps" in state else config["phone"].get("taps", [])
+        try:
+            self.taps: list[dict] = validate_taps(taps)
+        except ValueError as e:
+            log.warning("ignoring saved tap keys: %s", e)
+            self.taps = []
 
         self.match: Match | None = None
         self.match_id: int | None = None
@@ -144,7 +176,7 @@ class Harness:
     def _save_state(self) -> None:
         (self.var / "state.json").write_text(json.dumps(
             {"my_tag": self.my_tag, "my_deck": self.my_deck, "my_trophies": self.my_trophies,
-             "coach": self.coach}, indent=1))
+             "coach": self.coach, "taps": self.taps}, indent=1))
 
     # ---- commands ------------------------------------------------------
     def dispatch(self, cmd: dict) -> dict:
@@ -227,6 +259,11 @@ class Harness:
         seen = self.match.opp_cards() if self.match else []
         predicted = [c for c, _ in self.prediction.cards if c not in seen]
         return (seen + predicted)[:8]
+
+    def _cmd_set_taps(self, cmd: dict) -> dict:
+        self.taps = validate_taps(cmd.get("taps"))
+        self._save_state()
+        return {"taps": self.taps}
 
     def _cmd_set_coach(self, cmd: dict) -> dict:
         self.coach = bool(cmd.get("on"))
@@ -430,6 +467,7 @@ class Harness:
                 "messages": self.messages[-8:],
                 "hotkeys": self.cfg["hotkeys"],
                 "coach": self.coach,
+                "phone_taps": self.taps,
                 "coach_slots": self.coach_slots(),
             }
 

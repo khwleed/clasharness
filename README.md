@@ -110,6 +110,7 @@ That builds `~/Applications/Clash Harness.app`, which runs this checkout. See [`
 ### The phone screen
 
 - **Taps and swipes:** click or drag with the mouse or trackpad. **Back:** right-click the screen, or the Back button under it.
+- **Tap keys:** click **Tap keys** under the phone, then **Add a tap key**, click a spot on the screen and press a key. From then on that key taps that spot (holding the key holds the tap). Keys only work while the app's window has focus and you're not typing in a box, and Ctrl/Cmd/Option combos are left to the normal hotkeys. Tap keys are saved in `var/state.json`; they can also be listed in `config.toml` as `[[phone.taps]]` entries with `key`, `x`, `y` (fractions of the screen) and `name`.
 - **It reconnects by itself** when you unplug and replug the phone, and it keeps the phone awake while connected.
 - **It needs scrcpy installed** (`brew install scrcpy`), because it uses the `scrcpy-server` file that comes with it. Settings are under `[phone]` in `config.toml` (size, bit rate, frame rate, and `serial` if several phones are connected).
 - **To use the old separate scrcpy window instead**, set `[phone] embed = false`. Then `[scrcpy] autostart` starts the window as before. You can also start it from Setup in the UI while the embedded screen is on, for example to type on the phone with your keyboard.

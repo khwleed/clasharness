@@ -432,6 +432,7 @@ function onState(state) {
   const prevStatus = S?.match?.status;
   S = state;
   render();
+  window.onPhoneState?.(state);
   if (prevStatus === "running" && state.match.status === "ended") setTimeout(loadMatches, 500);
   if (state.messages.length) {
     const last = state.messages[state.messages.length - 1];

@@ -225,3 +225,16 @@ def test_coach_hand_key_matches_what_was_shown(client):
     after = client.get("/api/state").json()["match"]["opp"]["cycle"]["hand"]
     # The other three keep their keys; the incoming card takes E.
     assert [after[i] for i in (0, 1, 3)] == [shown[i] for i in (0, 1, 3)] and after[2] == "hog-rider"
+
+
+def test_tap_keys_saved_and_validated(client, tmp_path):
+    taps = [{"key": "Q", "x": 0.25, "y": 0.9, "name": "Card 1"}, {"key": "space", "x": 0.5, "y": 0.5}]
+    saved = cmd(client, cmd="set_taps", taps=taps)["taps"]
+    assert saved == [{"key": "q", "x": 0.25, "y": 0.9, "name": "Card 1"},
+                     {"key": "space", "x": 0.5, "y": 0.5, "name": ""}]
+    assert client.get("/api/state").json()["phone_taps"] == saved
+    for bad in ([{"key": "q", "x": 1.5, "y": 0}], [{"key": "q", "x": 0, "y": 0}, {"key": "Q", "x": 1, "y": 1}],
+                [{"key": "", "x": 0, "y": 0}], "nope"):
+        assert client.post("/api/command", json={"cmd": "set_taps", "taps": bad}).status_code == 400
+    # They survive a restart.
+    assert Harness(client.harness.cfg).taps == saved

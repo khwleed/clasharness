@@ -25,11 +25,24 @@
   <section class="phone" id="phone" hidden>
     <div class="phone-screen" id="phone-screen">
       <canvas id="phone-canvas" aria-label="Phone screen"></canvas>
+      <div class="tap-markers" id="tap-markers"></div>
       <div class="phone-msg" id="phone-msg">Connecting to your phone…</div>
     </div>
     <div class="phone-bar">
       <span id="phone-device" class="muted small"></span>
-      <button id="phone-back" title="Android Back button (or right-click the screen)">◁ Back</button>
+      <span class="inline">
+        <button id="tap-toggle" aria-pressed="false" title="Keys that tap spots on the phone screen">Tap keys</button>
+        <button id="phone-back" title="Android Back button (or right-click the screen)">◁ Back</button>
+      </span>
+    </div>
+    <!-- Not rebuilt by render(), so a half-finished binding survives state updates. -->
+    <div class="tap-editor" id="tap-editor" hidden>
+      <div class="small" id="tap-help"></div>
+      <div id="tap-list"></div>
+      <div class="inline">
+        <button id="tap-add" class="primary">Add a tap key</button>
+        <button id="tap-cancel" class="ghost" hidden>Cancel</button>
+      </div>
     </div>
   </section>
 

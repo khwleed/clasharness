@@ -62,6 +62,26 @@ kbd { font: 11px ui-monospace, monospace; background: #0008; border: 1px solid v
 .phone-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; text-align: center; color: var(--muted); background: #000c; }
 .phone-msg:empty { display: none; }
 .phone-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.phone-bar .inline { margin: 0; }
+#tap-toggle[aria-pressed="true"] { background: var(--elixir); border-color: var(--elixir); color: #fff; }
+
+/* Tap keys: markers on the screen while editing, and the editor under it. */
+.tap-markers { position: absolute; inset: 0; pointer-events: none; display: none; }
+.phone.editing .tap-markers { display: block; }
+.tap-marker { position: absolute; transform: translate(-50%, -50%); min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center; font: 700 12px ui-monospace, monospace;
+  background: var(--elixir); color: #fff; border: 2px solid #fff; box-shadow: 0 1px 6px #000a; }
+.tap-marker.pending { background: var(--warn); color: #000; }
+.tap-marker.hit { background: var(--good); }
+.phone.editing { position: static; }
+.phone.editing .phone-screen { height: 62vh; }
+.phone.picking #phone-canvas { cursor: crosshair; }
+.tap-editor { width: 0; min-width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
+.tap-row { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; padding: 4px 0; border-top: 1px solid var(--line); }
+.tap-row:first-child { border-top: 0; }
+.tap-row .warn-note { grid-column: 2 / 4; color: var(--warn); font-size: 11px; }
+#tap-help { margin-bottom: 6px; color: var(--muted); }
+#tap-help.active { color: var(--warn); font-weight: 600; }
 @media (max-width: 900px) {
   .layout.with-phone { grid-template-columns: 1fr; }
   .phone { position: static; align-items: center; }
