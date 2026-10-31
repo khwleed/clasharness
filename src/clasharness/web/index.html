@@ -10,11 +10,12 @@
 <header class="topbar">
   <div class="clock"><span id="clock">3:00</span><span id="phase" class="phase">Idle</span></div>
   <div class="controls">
-    <button data-cmd="start" class="primary" title="F9">Start <kbd>F9</kbd></button>
-    <button data-cmd="end" title="F10">End <kbd>F10</kbd></button>
-    <button data-cmd="next_phase" title="F11">Next phase <kbd>F11</kbd></button>
-    <button data-cmd="undo" title="F12">Undo <kbd>F12</kbd></button>
+    <button data-cmd="start" class="primary" data-hk="start">Start <kbd></kbd></button>
+    <button data-cmd="end" data-hk="end">End <kbd></kbd></button>
+    <button data-cmd="next_phase" data-hk="next_phase">Next phase <kbd></kbd></button>
+    <button data-cmd="undo" data-hk="undo">Undo <kbd></kbd></button>
     <button data-cmd="reset" class="ghost">Reset</button>
+    <button id="coach-toggle" class="ghost" aria-pressed="false" title="Show only the opponent's state">Coach mode</button>
   </div>
   <div class="chips" id="chips"></div>
 </header>
@@ -25,17 +26,26 @@
       <div class="side-head">
         <h2>Opponent <span id="opp-name" class="muted"></span></h2>
         <div class="tweaks">
-          <button data-cmd="adjust" data-side="opp" data-amount="-1" title="Alt+-">−1</button>
-          <button data-cmd="adjust" data-side="opp" data-amount="1" title="Alt+=">+1</button>
-          <button data-cmd="ability" data-side="opp" title="Alt+A">Ability</button>
+          <button data-cmd="adjust" data-side="opp" data-amount="-1" data-hk="opp_minus">−1</button>
+          <button data-cmd="adjust" data-side="opp" data-amount="1" data-hk="opp_plus">+1</button>
+          <button data-cmd="ability" data-side="opp" data-hk="opp_ability">Ability</button>
           <button data-cmd="collector_destroyed" data-side="opp" title="Elixir Collector destroyed">Pump down</button>
         </div>
       </div>
       <div class="elixir" id="elixir-opp"></div>
       <div class="row-label">Hand <span class="muted" id="hand-note-opp"></span></div>
       <div class="cards hand" id="hand-opp"></div>
-      <div class="row-label">Seen cards <span class="muted">click or <kbd>Alt</kbd>+<kbd>1–8</kbd> · faded = can't be in hand</span></div>
+      <div class="row-label"><span id="opp-deck-label">Seen cards</span> <span class="muted">click or <span id="hint-opp-seen"></span> · faded = can't be in hand</span></div>
       <div class="cards deck" id="deck-opp"></div>
+      <div class="inline small" id="opp-deck-actions">
+        <button id="opp-deck-build">Edit their deck</button>
+      </div>
+      <!-- Not rebuilt by render(), so what you type survives state updates. -->
+      <div id="opp-deck-editor" class="opp-deck-editor" hidden>
+        <div class="muted small">Pick their 8 cards. Cards they've already played must be in it.</div>
+        <div id="opp-deck-inputs" class="deck-edit"></div>
+        <div class="inline"><button id="opp-deck-save" class="primary">Use this deck</button><button id="opp-deck-cancel" class="ghost">Cancel</button></div>
+      </div>
       <div class="warn" id="warn-opp"></div>
     </div>
 
@@ -43,16 +53,16 @@
       <div class="side-head">
         <h2>You <span id="my-name" class="muted"></span></h2>
         <div class="tweaks">
-          <button data-cmd="adjust" data-side="me" data-amount="-1" title="Ctrl+-">−1</button>
-          <button data-cmd="adjust" data-side="me" data-amount="1" title="Ctrl+=">+1</button>
-          <button data-cmd="ability" data-side="me" title="Ctrl+A">Ability</button>
+          <button data-cmd="adjust" data-side="me" data-amount="-1" data-hk="my_minus">−1</button>
+          <button data-cmd="adjust" data-side="me" data-amount="1" data-hk="my_plus">+1</button>
+          <button data-cmd="ability" data-side="me" data-hk="my_ability">Ability</button>
           <button data-cmd="collector_destroyed" data-side="me" title="Elixir Collector destroyed">Pump down</button>
         </div>
       </div>
       <div class="elixir" id="elixir-me"></div>
       <div class="row-label">Hand <span class="muted" id="hand-note-me"></span></div>
       <div class="cards hand" id="hand-me"></div>
-      <div class="row-label">Deck <span class="muted">click or <kbd>F1–F8</kbd> when you play a card</span></div>
+      <div class="row-label">Deck <span class="muted">click or <span id="hint-my-cards"></span> when you play a card</span></div>
       <div class="cards deck" id="deck-me"></div>
       <div class="warn" id="warn-me"></div>
     </div>
@@ -62,11 +72,11 @@
     <div class="card-box">
       <h3>Opponent's next cards <span class="muted" id="pred-mode"></span></h3>
       <div class="search">
-        <input id="opp-search" placeholder="Log an unseen opponent card… (Alt+Space)" autocomplete="off">
+        <input id="opp-search" placeholder="Log an unseen opponent card…" autocomplete="off">
         <div id="opp-search-results" class="search-results"></div>
       </div>
       <div id="pred-cards"></div>
-      <details open><summary>Likely decks</summary><div id="pred-decks"></div></details>
+      <details open id="pred-decks-box"><summary>Likely decks</summary><div id="pred-decks"></div></details>
     </div>
 
     <div class="card-box">
@@ -75,9 +85,10 @@
       <div class="inline">
         <input id="opp-tag" placeholder="#OPPONENTTAG">
         <button id="opp-tag-set">Use tag</button>
-        <button data-cmd="identify" title="Alt+I">Read screen</button>
+        <button data-cmd="identify" data-hk="identify">Read screen</button>
       </div>
       <div class="muted small" id="opp-history"></div>
+      <div id="opp-history-decks"></div>
     </div>
 
     <div class="card-box">

@@ -87,22 +87,28 @@ This opens <http://127.0.0.1:8765> and, with `autostart = true`, starts scrcpy. 
 
 ## Playing with it
 
-| Key | Action |
-|---|---|
-| **F9** | Start the match. Press it on "Fight!", which starts the clock |
-| **F1–F8** | You played deck card 1–8 (order shown in the UI) |
-| **Alt+1…8** | Opponent played their 1st…8th *revealed* card |
-| **Alt+Q/W/E/R** | Opponent played predicted card #1–4 (the list updates live) |
-| **Alt+Space** | Search popup for any other opponent card |
-| **F12** | Undo the last event |
-| **F11** | Skip to the next elixir phase (if the timer drifted) |
-| **F10** | End the match |
-| Ctrl+= / Ctrl+- | Your elixir ±1 (correction, or Elixir Golem blobs) |
-| Alt+= / Alt+- | Opponent elixir ±1 |
-| Ctrl+A / Alt+A | Champion ability used (you / opponent) |
-| Alt+I | Read the opponent's name from the screen again |
+| Windows / Linux | macOS | Action |
+|---|---|---|
+| **F9** | **Ctrl+G** | Start the match. Press it on "Fight!", which starts the clock |
+| **F1–F8** | **Ctrl+1…8** | You played deck card 1–8 (order shown in the UI) |
+| **Alt+1…8** | **Ctrl+Q…I** | Opponent played their 1st…8th *revealed* card |
+| **Alt+Q/W/E/R** | **Ctrl+A/S/D/F** | Opponent played predicted card #1–4 (the list updates live) |
+| **Alt+Space** | **Ctrl+K** | Search popup for any other opponent card |
+| **F12** | **Ctrl+Z** | Undo the last event |
+| **F11** | **Ctrl+N** | Skip to the next elixir phase (if the timer drifted) |
+| **F10** | **Ctrl+X** | End the match |
+| Ctrl+= / Ctrl+- | Ctrl+= / Ctrl+- | Your elixir ±1 (correction, or Elixir Golem blobs) |
+| Alt+= / Alt+- | Ctrl+] / Ctrl+[ | Opponent elixir ±1 |
+| Ctrl+A / Alt+A | Ctrl+J / Ctrl+L | Champion ability used (you / opponent) |
+| Alt+I | Ctrl+O | Read the opponent's name from the screen again |
 
-You can rebind any of these in `[hotkeys]`. Everything can also be clicked in the UI.
+On macOS the keys mirror the keyboard: the digit row is your deck, the row below is the opponent's seen cards and the row below that is their predicted cards. You can rebind any of these in `[hotkeys]`. Everything can also be clicked in the UI, and the UI always shows the keys that are active.
+
+### Coach mode
+
+Click **Coach mode** in the top bar to track only the opponent. Your side is hidden, the opponent's hand and elixir get bigger, and plain **1–8** (no modifier) log the opponent's cards: their seen cards take the first keys, and the top predictions fill the rest. A predicted card you log becomes a seen card, usually on the same key. The other hotkeys keep working.
+
+Keys 1–8 are global, so they only do anything while coach mode is on **and** a match is running. Coach mode is saved, so it stays on across restarts.
 
 The opponent's first appearance of a card is the slow part. Usually it's in the predicted list (Alt+Q…R). If not, press Alt+Space, type a few letters and press Enter.
 
@@ -118,7 +124,7 @@ After **End**, the harness waits about 20 s, finds the battle in your battle log
 
 ## Platform notes
 
-- **macOS:** grant your terminal **Accessibility** and **Input Monitoring** permission (System Settings → Privacy & Security) or global hotkeys won't fire. Function keys may need **Fn**, or turn on "Use F1, F2, etc. keys as standard function keys". Option+letter types special characters on macOS, which can stop `<alt>+q`-style bindings from matching. If that happens, rebind them to `<ctrl>+<shift>+…` or `<cmd>+…`.
+- **macOS:** grant your terminal **Accessibility** and **Input Monitoring** permission (System Settings → Privacy & Security) or global hotkeys won't fire. The macOS defaults use Ctrl, because Option+letter types a symbol (Option+Q is "œ") and never matches, and F-keys need Fn. Avoid `<cmd>` bindings: scrcpy uses Cmd for its own shortcuts. `run.command` turns off the terminal's own Ctrl+Z/Y/S/Q while the app runs, so they can't suspend or freeze it.
 - **Linux:** global hotkeys need an **X11** session (pynput can't hook Wayland). On Wayland, log in with an X11 session, or use the browser UI on a second screen or device.
 - scrcpy forwards key presses to the phone as well. Clash Royale ignores F-keys and Alt combos, so this is harmless.
 

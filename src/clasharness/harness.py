@@ -21,6 +21,7 @@ from .api import ApiError, ClashApi, deck_from_player, normalize_tag, parse_batt
 from .cards import Catalog
 from .config import Config
 from .db import Database
+from .match import cycle
 from .match.elixir import Rules
 from .match.state import SIDES, Match
 from .predict.crawler import crawl, ingest_battlelog, seed_tags
@@ -52,6 +53,7 @@ class Harness:
         self.my_tag: str | None = state.get("my_tag") or config["api"]["my_tag"] or None
         self.my_deck: list[str] = state.get("my_deck", [])
         self.my_trophies: int | None = state.get("my_trophies")
+        self.coach: bool = bool(state.get("coach", False))
 
         self.match: Match | None = None
         self.match_id: int | None = None
@@ -132,7 +134,8 @@ class Harness:
 
     def _save_state(self) -> None:
         (self.var / "state.json").write_text(json.dumps(
-            {"my_tag": self.my_tag, "my_deck": self.my_deck, "my_trophies": self.my_trophies}, indent=1))
+            {"my_tag": self.my_tag, "my_deck": self.my_deck, "my_trophies": self.my_trophies,
+             "coach": self.coach}, indent=1))
 
     # ---- commands ------------------------------------------------------
     def dispatch(self, cmd: dict) -> dict:
@@ -202,11 +205,48 @@ class Harness:
             cards = m.my_deck
         elif source == "predicted":
             cards = [c for c, _ in self.prediction.cards]
+        elif source == "coach":
+            cards = self.coach_slots()
         else:
-            cards = m.opp_revealed()
+            cards = m.opp_cards()
         if not 0 <= slot < len(cards):
             raise CommandError(f"no card in {side} {source} slot {slot + 1}")
         return cards[slot]
+
+    def coach_slots(self) -> list[str]:
+        """The opponent's 8 slots in coach mode: seen cards first, then the top predictions."""
+        seen = self.match.opp_cards() if self.match else []
+        predicted = [c for c, _ in self.prediction.cards if c not in seen]
+        return (seen + predicted)[:8]
+
+    def _cmd_set_coach(self, cmd: dict) -> dict:
+        self.coach = bool(cmd.get("on"))
+        self._save_state()
+        return {"coach": self.coach}
+
+    def _coach_active(self) -> bool:
+        # Plain keys are global, so they only count while they can only mean a coach-mode play.
+        return self.coach and bool(self.match) and self.match.started and not self.match.ended
+
+    def _cmd_coach_key(self, cmd: dict) -> dict:
+        if not self._coach_active():
+            return {"ignored": True}
+        return self._cmd_play({"side": "opp", "slot": cmd["slot"], "source": "coach", "t": cmd.get("t")})
+
+    def _cmd_coach_undo(self, cmd: dict) -> dict:
+        if not self._coach_active():
+            return {"ignored": True}
+        return self._cmd_undo(cmd)
+
+    def _cmd_coach_hand(self, cmd: dict) -> dict:
+        """Q/W/E/R: play a card from the opponent's hand, once all 4 are known."""
+        if not self._coach_active():
+            return {"ignored": True}
+        m = self.match
+        view = cycle.infer(m.cycle_deck("opp"), m.plays("opp"))
+        if view.hand_unknown or len(view.hand) != cycle.HAND_SIZE:
+            raise CommandError("their hand isn't fully known yet")
+        return self._cmd_play({"side": "opp", "card": view.hand[cmd["slot"]], "t": cmd.get("t")})
 
     def _cmd_adjust(self, cmd: dict) -> dict:
         m = self._require_match()
@@ -234,7 +274,7 @@ class Harness:
         if ev and ev.type == "end":
             self.db.save_match(m, self.my_tag, self.match_id)
         if ev and ev.side == "opp":
-            self._repredict()
+            self._after_change("opp")
         return {"undone": ev.to_dict() if ev else None}
 
     def _cmd_reset(self, cmd: dict) -> dict:
@@ -272,8 +312,49 @@ class Harness:
             self.spawn(self.load_opp_history(normalize_tag(tag)))
         else:
             self.opp_history, self.opp_history_status = [], ""
+            self._fit_opp_deck()
             self._repredict()
         return {}
+
+    def _cmd_set_opp_deck(self, cmd: dict) -> dict:
+        """You picked or built the opponent's deck."""
+        m = self._require_match()
+        cards = cmd.get("cards") or []
+        bad = [c for c in cards if c not in self.catalog]
+        if len(cards) != 8 or len(set(cards)) != 8 or bad:
+            raise CommandError(f"need 8 distinct known cards (unknown: {bad})")
+        missing = [c for c in m.opp_revealed() if c not in cards]
+        if missing:
+            raise CommandError(f"they've already played {', '.join(missing)}, which isn't in that deck")
+        m.opp_deck, m.opp_deck_source = list(cards), "manual"
+        self._repredict()
+        return {}
+
+    def _cmd_clear_opp_deck(self, cmd: dict) -> dict:
+        """Not their deck: go back to predictions until you pick or build one."""
+        m = self._require_match()
+        m.opp_deck, m.opp_deck_source = None, "dismissed"
+        self._repredict()
+        return {}
+
+    def _fit_opp_deck(self) -> None:
+        """Assume the opponent plays their most recent deck that has every card they've shown."""
+        m = self.match
+        if not m:
+            return
+        seen = set(m.opp_revealed())
+        if m.opp_deck_source == "manual":
+            if seen <= set(m.opp_deck):
+                return
+            self.note("They played a card that isn't in the deck you set, so it's no longer assumed.", "warn")
+            m.opp_deck_source = None
+        if m.opp_deck_source == "dismissed":
+            return
+        fit = next((d for d in self.opp_history if seen <= set(d)), None)  # history is newest first
+        if m.opp_deck and fit != m.opp_deck:
+            self.note("Switched to another of their recent decks." if fit else
+                      "None of their recent decks fits what they've played: back to predictions.", "warn")
+        m.opp_deck, m.opp_deck_source = (list(fit), "history") if fit else (None, None)
 
     def _cmd_identify(self, cmd: dict) -> dict:
         self.spawn(self.identify_opponent(delay=0))
@@ -303,10 +384,11 @@ class Harness:
 
     def _after_change(self, side: str) -> None:
         if side == "opp":
+            self._fit_opp_deck()
             self._repredict()
 
     def _repredict(self) -> None:
-        seen = self.match.opp_revealed() if self.match else []
+        seen = self.match.opp_cards() if self.match else []
         p = self.cfg["predict"]
         self.prediction = predict(self.meta, seen, self.opp_history or None,
                                   min_support=p["min_support"], history_weight=p["history_weight"])
@@ -337,6 +419,8 @@ class Harness:
                 "scrcpy": self.scrcpy.status(),
                 "messages": self.messages[-8:],
                 "hotkeys": self.cfg["hotkeys"],
+                "coach": self.coach,
+                "coach_slots": self.coach_slots(),
             }
 
     def _db_stats(self) -> dict:
@@ -411,6 +495,7 @@ class Harness:
                 self.match.opp_name = self.match.opp_name or name
             self.opp_history = decks
             self.opp_history_status = f"{len(decks)} recent decks"
+            self._fit_opp_deck()
             self._repredict()
             self.touch()
 
@@ -420,32 +505,46 @@ class Harness:
         from .vision.resolve import resolve
 
         vcfg = self.cfg["vision"]
+        match = self.match
         if delay:
             await asyncio.sleep(delay)
-        self.vision = {"status": "capturing"}
-        self.touch()
-        try:
-            png = await screenshot(vcfg["adb_path"])
-        except CaptureError as e:
-            self.vision = {"status": "error", "error": f"screenshot: {e}"}
+        deadline = time.time() + vcfg["retry_for_seconds"]
+        while True:
+            self.vision = {"status": "capturing"}
             self.touch()
-            return
-        vdir = self.var / "vision"
-        vdir.mkdir(exist_ok=True)
-        (vdir / "last_screen.png").write_bytes(png)
-        banner = crop(png, vcfg["crop"])
-        (vdir / "last_crop.png").write_bytes(banner)
+            try:
+                png = await screenshot(vcfg["adb_path"])
+            except CaptureError as e:
+                self.vision = {"status": "error", "error": f"screenshot: {e}"}
+                self.touch()
+                return
+            vdir = self.var / "vision"
+            vdir.mkdir(exist_ok=True)
+            (vdir / "last_screen.png").write_bytes(png)
+            banner = crop(png, vcfg["crop"])
+            (vdir / "last_crop.png").write_bytes(banner)
 
-        self.vision = {"status": "reading"}
-        self.touch()
-        try:
-            orc = self.cfg["openrouter"]
-            reader = BannerReader(orc["model"], self.cfg.openrouter_key, orc["base_url"])
-            read = await reader.read(banner)
-        except ReadError as e:
-            self.vision = {"status": "error", "error": str(e)}
+            self.vision = {"status": "reading"}
             self.touch()
-            return
+            try:
+                orc = self.cfg["openrouter"]
+                reader = BannerReader(orc["model"], self.cfg.openrouter_key, orc["base_url"])
+                read = await reader.read(banner)
+            except ReadError as e:
+                self.vision = {"status": "error", "error": str(e)}
+                self.touch()
+                return
+            if read.player_name.strip():
+                break
+            # No name on screen yet: still matchmaking or fading into the battle.
+            if self.match is not match or time.time() + vcfg["retry_seconds"] > deadline:
+                self.vision = {"status": "not_found", "read": read.model_dump(),
+                               "error": "No opponent name on screen. Press Read screen once the battle shows."}
+                self.touch()
+                return
+            self.vision = {"status": "waiting", "read": read.model_dump()}
+            self.touch()
+            await asyncio.sleep(vcfg["retry_seconds"])
 
         self.vision = {"status": "resolving", "read": read.model_dump()}
         if self.match:

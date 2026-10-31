@@ -85,3 +85,65 @@ async def test_reader_surfaces_api_errors():
 def test_reader_needs_key():
     with pytest.raises(ReadError):
         BannerReader("m", None)
+
+
+async def test_identify_waits_for_the_name_banner(tmp_path, api, monkeypatch):
+    """Start pressed during matchmaking: keep screenshotting until a name shows up."""
+    import io
+
+    from PIL import Image
+
+    from clasharness.config import DEFAULTS, Config, _merge
+    from clasharness.harness import Harness
+    from clasharness.vision import capture, reader
+
+    buf = io.BytesIO()
+    Image.new("RGB", (100, 200)).save(buf, "PNG")
+    shots = []
+
+    async def fake_screenshot(adb_path):
+        shots.append(1)
+        return buf.getvalue()
+
+    replies = [reader.BannerRead(player_name="", clan_name="", confident=False)] * 2 + \
+              [reader.BannerRead(player_name="Giant Guy", clan_name="Big Clan", confident=True)]
+
+    async def fake_read(self, png):
+        return replies[len(shots) - 1]
+
+    monkeypatch.setattr(capture, "screenshot", fake_screenshot)
+    monkeypatch.setattr(reader.BannerReader, "read", fake_read)
+    cfg = Config(_merge(DEFAULTS, {"storage": {"dir": str(tmp_path)}, "openrouter": {"api_key": "k"},
+                                   "vision": {"retry_seconds": 0.01, "retry_for_seconds": 5}}))
+    h = Harness(cfg, api=api)
+    await h.identify_opponent()
+    assert len(shots) == 3
+    assert h.vision["read"]["player_name"] == "Giant Guy"
+    assert h.vision["status"] in ("resolved", "ambiguous", "not_found") and "error" not in h.vision
+
+
+async def test_identify_gives_up_without_a_name(tmp_path, api, monkeypatch):
+    import io
+
+    from PIL import Image
+
+    from clasharness.config import DEFAULTS, Config, _merge
+    from clasharness.harness import Harness
+    from clasharness.vision import capture, reader
+
+    buf = io.BytesIO()
+    Image.new("RGB", (100, 200)).save(buf, "PNG")
+
+    async def fake_screenshot(adb_path):
+        return buf.getvalue()
+
+    async def fake_read(self, png):
+        return reader.BannerRead(player_name="", clan_name="", confident=False)
+
+    monkeypatch.setattr(capture, "screenshot", fake_screenshot)
+    monkeypatch.setattr(reader.BannerReader, "read", fake_read)
+    cfg = Config(_merge(DEFAULTS, {"storage": {"dir": str(tmp_path)}, "openrouter": {"api_key": "k"},
+                                   "vision": {"retry_seconds": 0.01, "retry_for_seconds": 0.05}}))
+    h = Harness(cfg, api=api)
+    await h.identify_opponent()
+    assert h.vision["status"] == "not_found" and "Read screen" in h.vision["error"]

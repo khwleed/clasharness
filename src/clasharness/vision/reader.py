@@ -79,6 +79,9 @@ class BannerReader:
             "response_format": _response_format(),
             "temperature": 0,
             "max_tokens": 300,
+            # Transcription needs no thinking. Reasoning models otherwise spend the whole
+            # token budget reasoning and return empty content.
+            "reasoning": {"enabled": False},
         }
         try:
             r = await self.client.post("/chat/completions", json=body)
@@ -98,4 +101,7 @@ class BannerReader:
         choices = data.get("choices") or []
         if not choices:
             raise ReadError("OpenRouter returned no choices")
-        return parse_reply(choices[0].get("message", {}).get("content") or "")
+        content = choices[0].get("message", {}).get("content") or ""
+        if not content and choices[0].get("finish_reason") == "length":
+            raise ReadError(f"{self.model} hit max_tokens before answering (reasoning not disabled?)")
+        return parse_reply(content)

@@ -6,6 +6,7 @@ let byName = {};         // lowercased name -> key
 let S = null;            // latest state snapshot
 let lastVersion = -1;
 let lastMatchesFetch = 0;
+let coach = false;       // coach mode (server-side): only the opponent's side, keys 1–8
 
 // ---------- helpers ----------
 function esc(s) {
@@ -13,8 +14,9 @@ function esc(s) {
 }
 function keyLabel(k) {
   if (!k) return "";
+  if (k === "<backspace>") return "⌫";
   return k.replace(/<([^>]+)>/g, (_, m) => /^f\d+$/.test(m) ? m.toUpperCase() : m[0].toUpperCase() + m.slice(1))
-          .replace(/\+([a-z])$/, (_, c) => "+" + c.toUpperCase());
+          .replace(/(^|\+)([a-z])$/, (_, p, c) => p + c.toUpperCase());
 }
 function cardName(key) { return cards[key]?.name ?? key; }
 function fmtClock(sec) {
@@ -68,9 +70,12 @@ function renderElixir(el, e) {
 function renderHand(side, cyc, deck) {
   const hand = $(`hand-${side}`), note = $(`hand-note-${side}`);
   if (!cyc) { hand.innerHTML = ""; note.textContent = ""; return; }
-  const parts = cyc.hand.map((k) => tile(k, side === "me" ? { cmd: { cmd: "play", side, card: k } } : {}));
+  // Coach mode: once all 4 of the opponent's cards are known, Q/W/E/R play them in this order.
+  const handKeys = side === "opp" && coach && cyc.hand.length === 4 && !cyc.hand_unknown ? S.hotkeys.coach_hand : [];
+  const parts = cyc.hand.map((k, i) => tile(k, { key: handKeys[i], cmd: { cmd: "play", side, card: k } }));
   for (let i = 0; i < cyc.hand_unknown; i++) parts.push(tile(null));
   if (cyc.next) parts.push(`<div class="slot-next">${tile(cyc.next, { cls: "next" })}next</div>`);
+  if (side === "opp") parts.push(undoKey());
   hand.innerHTML = parts.join("");
   if (cyc.hand_candidates.length) {
     note.textContent = side === "me"
@@ -79,11 +84,28 @@ function renderHand(side, cyc, deck) {
   } else note.textContent = "";
 }
 
+// Undo sits next to the opponent's hand, where you're looking when you log the wrong card.
+// It names what it would take back (the start can't be undone; an accidental End can).
+function undoKey() {
+  const ev = S.match.events || [];
+  const last = ev.length > 1 ? ev[ev.length - 1] : null;
+  const key = coach ? S.hotkeys.coach_undo : S.hotkeys.undo;
+  return `<div class="undo-slot">
+    <button class="undo-key" data-cmd="undo"${last ? "" : " disabled"} title="${esc(keyLabel(key))}">Undo <kbd class="keycap">${esc(keyLabel(key))}</kbd></button>
+    <span class="undo-what">${last ? esc(eventText(last)) : "nothing to undo"}</span>
+  </div>`;
+}
+
 function render() {
   const s = S;
   const m = s.match;
   const hk = s.hotkeys;
   const running = m.status === "running";
+
+  coach = !!s.coach;
+  document.body.classList.toggle("coach", coach);
+  $("coach-toggle").setAttribute("aria-pressed", String(coach));
+  renderKeyHints(hk);
 
   // clock + phase
   $("clock").textContent = m.status === "idle" ? "3:00" : fmtClock(m.clock_remaining);
@@ -108,16 +130,28 @@ function render() {
     $(`warn-${side}`).textContent = d?.cycle?.warnings?.join(" · ") || "";
   }
   const notInHand = new Set(m.me?.cycle?.not_in_hand || []);
-  $("deck-me").innerHTML = s.my_deck.map((k, i) =>
-    tile(k, { key: hk.my_cards[i], cls: notInHand.has(k) ? "dim" : "", cmd: { cmd: "play", side: "me", slot: i } })).join("")
-    || `<span class="muted">No deck yet: set your tag in Setup.</span>`;
+  $("deck-me").innerHTML = handRows(s.my_deck.map((k, i) => ({
+    out: notInHand.has(k),
+    html: tile(k, { key: hk.my_cards[i], cls: notInHand.has(k) ? "dim" : "", cmd: { cmd: "play", side: "me", slot: i } }),
+  }))) || `<span class="muted">No deck yet: set your tag in Setup.</span>`;
 
+  // Their known cards: seen ones first, then the rest of their assumed deck (dashed until played).
   const revealed = m.opp?.revealed || [];
+  const oppCards = m.opp?.cards || revealed;
   const oppNot = new Set(m.opp?.cycle?.not_in_hand || []);
-  const oppTiles = revealed.map((k, i) =>
-    tile(k, { key: hk.opp_seen[i], cls: oppNot.has(k) ? "dim" : "", cmd: { cmd: "play", side: "opp", slot: i, source: "seen" } }));
-  for (let i = revealed.length; i < 8; i++) oppTiles.push(tile(null));
-  $("deck-opp").innerHTML = oppTiles.join("");
+  const oppTiles = oppCards.map((k, i) => ({
+    out: oppNot.has(k),
+    html: tile(k, { key: coach ? hk.coach_opp[i] : hk.opp_seen[i],
+                    cls: [oppNot.has(k) ? "dim" : "", revealed.includes(k) ? "" : "assumed"].join(" "),
+                    cmd: { cmd: "play", side: "opp", slot: i, source: "seen" } }),
+  }));
+  // Unseen cards could be in hand, so they stay on the top row.
+  for (let i = oppCards.length; i < 8; i++) oppTiles.push({ out: false, html: tile(null) });
+  $("deck-opp").innerHTML = handRows(oppTiles);
+  // Once their whole hand is known, the hand row is what matters: tone the grid down.
+  const oppCyc = m.opp?.cycle;
+  $("deck-opp").classList.toggle("secondary", !!oppCyc && oppCyc.hand.length === 4 && !oppCyc.hand_unknown);
+  renderOppDeck(m);
 
   $("opp-name").textContent = [s.opponent.name, s.opponent.tag].filter(Boolean).join(" · ");
   $("my-name").textContent = [s.my_tag, s.my_trophies && `${s.my_trophies} 🏆`].filter(Boolean).join(" · ");
@@ -128,16 +162,63 @@ function render() {
   renderSetup(s);
 }
 
+// Cards that can be in hand on the top row, cards that can't (faded) on the row below.
+// Each tile keeps its own key label, so the order on screen doesn't change the keys.
+function handRows(items) {
+  const row = (xs) => xs.length ? `<div class="tile-row">${xs.map((x) => x.html).join("")}</div>` : "";
+  return row(items.filter((x) => !x.out)) + row(items.filter((x) => x.out));
+}
+
+// Key labels come from the active bindings, which differ by platform and mode.
+function renderKeyHints(hk) {
+  const range = (keys) => keys.length ? `<kbd>${esc(keyLabel(keys[0]))}</kbd>–<kbd>${esc(keyLabel(keys[keys.length - 1]))}</kbd>` : "";
+  $("hint-opp-seen").innerHTML = range(coach ? hk.coach_opp : hk.opp_seen);
+  $("hint-my-cards").innerHTML = range(hk.my_cards);
+  $("opp-search").placeholder = `Log an unseen opponent card… (${keyLabel(hk.opp_search)})`;
+  document.querySelectorAll("[data-hk]").forEach((el) => {
+    const name = coach && el.dataset.hk === "undo" ? "coach_undo" : el.dataset.hk;  // Backspace in coach mode
+    const label = keyLabel(hk[name]);
+    el.title = label;
+    const kbd = el.querySelector("kbd");
+    if (kbd) kbd.textContent = label;
+  });
+}
+
+// With their deck known (from RoyaleAPI or set by you), their next cards are simply the
+// ones they haven't played yet. "Doesn't match" drops it and goes back to predictions.
+function renderAssumedDeck(s, opp) {
+  const seen = new Set(opp.revealed);
+  const slot = (c) => opp.cards.indexOf(c);
+  const key = (c) => (coach ? s.hotkeys.coach_opp : s.hotkeys.opp_seen)[slot(c)];
+  $("pred-mode").textContent = opp.deck_source === "history" ? "· their deck from RoyaleAPI" : "· the deck you set";
+  const rest = opp.cards.filter((c) => !seen.has(c));
+  $("pred-cards").innerHTML = `
+    <div class="inline"><span class="muted small">${rest.length ? `${rest.length} not played yet` : "All 8 played."}</span>
+      <button data-cmd="clear_opp_deck" class="mismatch">Doesn't match</button></div>
+    ${rest.map((c) => `
+      <div class="pred" data-play='${esc(JSON.stringify({ cmd: "play", side: "opp", card: c }))}' title="Click to log as played">
+        ${key(c) ? `<kbd>${esc(keyLabel(key(c)))}</kbd>` : "<span></span>"}
+        <div>${esc(cardName(c))} <span class="muted small">${cards[c]?.elixir ?? ""}</span></div>
+        <span></span>
+      </div>`).join("")}`;
+  $("pred-decks-box").hidden = true;
+}
+
 function renderPrediction(s) {
   const p = s.prediction;
+  const opp = s.match.opp;
+  if (opp?.deck_source) return renderAssumedDeck(s, opp);
+  $("pred-decks-box").hidden = false;
   const labels = { exact: "from decks with all seen cards", similar: "from similar decks", history: "from their recent decks", none: "", complete: "all 8 known" };
   $("pred-mode").textContent = p.mode === "none" ? "" : `· ${labels[p.mode] || p.mode}${p.support ? ` (${p.support} decks)` : ""}`;
   if (!p.cards.length) {
     $("pred-cards").innerHTML = `<div class="muted small">${s.dataset.decks_loaded ? "Waiting for the opponent's first card." : "No deck data yet: run a crawl from Setup (needs an API token)."}</div>`;
   } else {
+    // In coach mode a prediction's key is its slot among the opponent's 8 (after the seen cards).
+    const predKey = (c, i) => coach ? s.hotkeys.coach_opp[s.coach_slots.indexOf(c.card)] : s.hotkeys.opp_predicted[i];
     $("pred-cards").innerHTML = p.cards.slice(0, 10).map((c, i) => `
       <div class="pred" data-play='${esc(JSON.stringify({ cmd: "play", side: "opp", card: c.card }))}' title="Click to log as played">
-        ${i < s.hotkeys.opp_predicted.length ? `<kbd>${esc(keyLabel(s.hotkeys.opp_predicted[i]))}</kbd>` : "<span></span>"}
+        ${predKey(c, i) ? `<kbd>${esc(keyLabel(predKey(c, i)))}</kbd>` : "<span></span>"}
         <div>${esc(cardName(c.card))} <span class="muted small">${cards[c.card]?.elixir ?? ""}</span>
           <div class="bar"><i style="width:${Math.round(c.p * 100)}%"></i></div></div>
         <div class="p">${Math.round(c.p * 100)}%</div>
@@ -149,18 +230,37 @@ function renderPrediction(s) {
     || `<div class="muted small">—</div>`;
 }
 
+function renderOppDeck(m) {
+  const src = m.opp?.deck_source;
+  $("opp-deck-label").textContent = src === "history" ? "Their deck · from their recent battles"
+    : src === "manual" ? "Their deck · set by you" : "Seen cards";
+  $("opp-deck-actions").hidden = m.status !== "running" || !$("opp-deck-editor").hidden;
+  $("opp-deck-build").textContent = src ? "Edit their deck" : "Build their deck";
+}
+
+function openOppDeckEditor() {
+  const cards = S.match.opp?.cards || [];
+  $("opp-deck-inputs").innerHTML = Array.from({ length: 8 }, (_, i) =>
+    `<input list="card-names" placeholder="Card ${i + 1}" value="${esc(cards[i] ? cardName(cards[i]) : "")}">`).join("");
+  $("opp-deck-editor").hidden = false;
+  $("opp-deck-actions").hidden = true;
+  [...$("opp-deck-inputs").querySelectorAll("input")].find((i) => !i.value)?.focus();
+}
+function closeOppDeckEditor() { $("opp-deck-editor").hidden = true; }
+
 function renderVision(s) {
   const v = s.vision;
   const lines = [];
   const status = {
     idle: "Press Start (or Read screen) to read the opponent's name from the phone.",
     capturing: "Taking a screenshot…", reading: "Reading the name…", resolving: "Looking up the player…",
+    waiting: "No name on screen yet: waiting for the battle to show…",
     resolved: "Matched the opponent's tag.", ambiguous: "Several possible players: pick one.",
     not_found: "Couldn't find this player. Try RoyaleAPI search or paste the tag.",
   }[v.status] || "";
-  if (v.status === "error") lines.push(`<div class="status-line error">${esc(v.error)}</div>`);
+  if (v.error) lines.push(`<div class="status-line error">${esc(v.error)}</div>`);
   else lines.push(`<div class="status-line">${esc(status)}</div>`);
-  if (v.read) lines.push(`<div class="small">Read: <b>${esc(v.read.player_name)}</b>${v.read.clan_name ? ` · ${esc(v.read.clan_name)}` : " · no clan"}${v.read.confident ? "" : " <span class='muted'>(unsure)</span>"}</div>`);
+  if (v.read?.player_name) lines.push(`<div class="small">Read: <b>${esc(v.read.player_name)}</b>${v.read.clan_name ? ` · ${esc(v.read.clan_name)}` : " · no clan"}${v.read.confident ? "" : " <span class='muted'>(unsure)</span>"}</div>`);
   for (const c of v.candidates || []) {
     lines.push(`<div class="cand" data-tag="${esc(c.tag)}" data-name="${esc(c.name)}"><span>${esc(c.name)} <span class="muted">${esc(c.tag)}</span></span>
       <span class="muted">${esc(c.clan_name || "no clan")} · ${c.trophies ?? "?"} · ${Math.round(c.score)}</span></div>`);
@@ -169,23 +269,33 @@ function renderVision(s) {
   $("vision").innerHTML = lines.join("");
   const h = s.opponent;
   $("opp-history").textContent = h.history_status ? `Their battle log: ${h.history_status}` : "";
+  // Their recent decks, newest first: click one to use it.
+  const current = [...(s.match.opp?.cards || [])].sort().join();
+  const running = s.match.status === "running";
+  $("opp-history-decks").innerHTML = (h.history_decks || []).map((d) => {
+    const isCurrent = current === [...d].sort().join();
+    const pick = running && !isCurrent;
+    return `<div class="deck-row${pick ? " pick" : ""}${isCurrent ? " current" : ""}"${pick ? ` data-opp-deck='${esc(JSON.stringify(d))}' title="Use this deck"` : ""}>
+      <span class="src">${isCurrent ? "their deck now" : pick ? "use this deck" : "recent deck"}</span><br>${d.map((k) => esc(cardName(k))).join(", ")}</div>`;
+  }).join("");
+}
+
+function eventText(e) {
+  switch (e.type) {
+    case "start": return "Match start";
+    case "end": return "Match end";
+    case "play": return `${e.side === "me" ? "You" : "Opp"} played ${cardName(e.card)}`;
+    case "adjust": return `${e.side === "me" ? "Your" : "Opp"} elixir ${e.amount > 0 ? "+" : ""}${e.amount}`;
+    case "ability": return `${e.side === "me" ? "Your" : "Opp"} champion ability`;
+    case "collector_destroyed": return `${e.side === "me" ? "Your" : "Opp"} collector destroyed`;
+    case "next_phase": return "Skipped to next phase";
+    default: return e.type;
+  }
 }
 
 function renderTimeline(m) {
-  const ev = (m.events || []).slice().reverse();
-  const text = (e) => {
-    switch (e.type) {
-      case "start": return "Match start";
-      case "end": return "Match end";
-      case "play": return `${e.side === "me" ? "You" : "Opp"} played ${cardName(e.card)}`;
-      case "adjust": return `${e.side === "me" ? "Your" : "Opp"} elixir ${e.amount > 0 ? "+" : ""}${e.amount}`;
-      case "ability": return `${e.side === "me" ? "Your" : "Opp"} champion ability`;
-      case "collector_destroyed": return `${e.side === "me" ? "Your" : "Opp"} collector destroyed`;
-      case "next_phase": return "Skipped to next phase";
-      default: return e.type;
-    }
-  };
-  $("timeline").innerHTML = ev.map((e) => `<li><span class="t" title="${e.game_time}s in">${fmtClock(e.clock)}</span><span class="dot ${e.side || ""}"></span><span>${esc(text(e))}</span></li>`).join("");
+  const ev = (m.events || []).filter((e) => !(coach && e.side === "me")).reverse();
+  $("timeline").innerHTML = ev.map((e) => `<li><span class="t" title="${e.game_time}s in">${fmtClock(e.clock)}</span><span class="dot ${e.side || ""}"></span><span>${esc(eventText(e))}</span></li>`).join("");
 }
 
 function renderSetup(s) {
@@ -229,9 +339,23 @@ document.addEventListener("click", async (e) => {
     await command(body);
     return;
   }
+  const deck = e.target.closest("[data-opp-deck]");
+  if (deck) { await command({ cmd: "set_opp_deck", cards: JSON.parse(deck.dataset.oppDeck) }); return; }
   const cand = e.target.closest(".cand");
   if (cand) await command({ cmd: "set_opp_tag", tag: cand.dataset.tag, name: cand.dataset.name });
 });
+
+// Coach mode lives on the server, because the global 1–8 keys only fire while it's on.
+// Your plays are still tracked if you log them.
+$("coach-toggle").onclick = () => command({ cmd: "set_coach", on: !coach });
+
+$("opp-deck-build").onclick = openOppDeckEditor;
+$("opp-deck-cancel").onclick = closeOppDeckEditor;
+$("opp-deck-save").onclick = async () => {
+  const keys = [...document.querySelectorAll("#opp-deck-inputs input")].map((i) => byName[i.value.trim().toLowerCase()]);
+  if (keys.some((k) => !k)) return toast("Every slot needs a card name from the list", true);
+  if (await command({ cmd: "set_opp_deck", cards: keys })) { closeOppDeckEditor(); toast("Using that deck"); }
+};
 
 $("opp-tag-set").onclick = () => command({ cmd: "set_opp_tag", tag: $("opp-tag").value });
 $("my-tag-set").onclick = () => command({ cmd: "set_my_tag", tag: $("my-tag").value }).then((r) => r && toast("Saved; loading your deck…"));

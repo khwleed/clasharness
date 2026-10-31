@@ -35,8 +35,27 @@ class CycleView:
 
 
 def infer(deck: list[str], plays: list[str], deck_size: int = DECK_SIZE) -> CycleView:
-    """deck: cards known to be in the deck (all 8 for me, revealed cards for the opponent).
-    plays: every card played, in order."""
+    """deck: cards known to be in the deck (all 8 for me, the known cards for the opponent).
+    plays: every card played, in order.
+
+    The hand comes back in a stable order, like the game's own: a card keeps its position
+    while it stays in hand, and the card that comes in takes the place of the one played.
+    """
+    view = _infer(deck, plays, deck_size)
+    order: list[str] = []
+    for i in range(len(plays) + 1):
+        hand = view.hand if i == len(plays) else _infer(deck, plays[:i], deck_size).hand
+        slots = [c if c in hand else None for c in order]
+        incoming = [c for c in hand if c not in order]
+        for j, c in enumerate(slots):
+            if c is None and incoming:
+                slots[j] = incoming.pop(0)
+        order = [c for c in slots if c is not None] + incoming
+    view.hand = order
+    return view
+
+
+def _infer(deck: list[str], plays: list[str], deck_size: int) -> CycleView:
     warnings: list[str] = []
     played_order: list[str] = []  # distinct cards, least recently played first
     for i, card in enumerate(plays):

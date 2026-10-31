@@ -55,3 +55,12 @@ def test_opponent_after_six_distinct_plays():
     assert v.hand_unknown == 2
     assert v.next == "c"
     assert v.not_in_hand == ["c", "d", "e", "f"]
+
+
+def test_hand_keeps_positions_like_the_game():
+    deck = ["a", "b", "c", "d", "e", "f", "g", "h"]
+    plays = ["e", "f", "g", "h"]  # the hand is now exactly a, b, c, d
+    assert infer(deck, plays).hand == ["a", "b", "c", "d"]
+    # Playing c: e (least recently played) comes in and takes c's place; a, b, d stay put.
+    assert infer(deck, plays + ["c"]).hand == ["a", "b", "e", "d"]
+    assert infer(deck, plays + ["c", "a"]).hand == ["f", "b", "e", "d"]

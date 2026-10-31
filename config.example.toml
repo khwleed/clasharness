@@ -33,6 +33,10 @@ enabled = true
 identify_on_start = true
 # Seconds after Start before the screenshot (the name banner needs to be on screen).
 delay_seconds = 1.5
+# If the name isn't on screen yet (Start pressed during matchmaking), try again every
+# retry_seconds for up to retry_for_seconds.
+retry_seconds = 2.0
+retry_for_seconds = 20.0
 # Opponent name/clan banner as fractions of the screen: [x0, y0, x1, y1].
 # Check it in the UI under Setup → Name crop calibration.
 crop = [0.0, 0.0, 0.75, 0.085]
@@ -61,19 +65,7 @@ trickle_interval_seconds = 600  # …and how often
 
 [hotkeys]
 enabled = true
-# pynput syntax: <f1>, <alt>+q, <ctrl>+<shift>+x, ...
-my_cards = ["<f1>", "<f2>", "<f3>", "<f4>", "<f5>", "<f6>", "<f7>", "<f8>"]
-opp_seen = ["<alt>+1", "<alt>+2", "<alt>+3", "<alt>+4", "<alt>+5", "<alt>+6", "<alt>+7", "<alt>+8"]
-opp_predicted = ["<alt>+q", "<alt>+w", "<alt>+e", "<alt>+r"]
-opp_search = "<alt>+<space>"
-start = "<f9>"
-end = "<f10>"
-next_phase = "<f11>"
-undo = "<f12>"
-identify = "<alt>+i"
-my_ability = "<ctrl>+a"
-opp_ability = "<alt>+a"
-my_plus = "<ctrl>+="
-my_minus = "<ctrl>+-"
-opp_plus = "<alt>+="
-opp_minus = "<alt>+-"
+# Defaults depend on the platform (see README). On macOS everything uses Ctrl, because
+# Option+letter types a symbol and won't match. Override any of them here in pynput
+# syntax, e.g.  start = "<ctrl>+g"   or   my_cards = ["<ctrl>+1", ...]
+# In coach mode, plain keys 1-8 log the opponent's 8 slots: coach_opp = ["1", ..., "8"]

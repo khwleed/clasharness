@@ -4,12 +4,66 @@ from __future__ import annotations
 
 import copy
 import os
+import sys
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
+
+# Coach mode: plain keys 1-8 log the opponent's 8 card slots (seen cards first, then
+# the top predictions). They only fire while coach mode is on and a match is running.
+COACH_KEYS = [str(i) for i in range(1, 9)]
+# Coach mode: once the opponent's whole hand is known, Q/W/E/R log its cards in the order shown.
+COACH_HAND_KEYS = ["q", "w", "e", "r"]
+# Coach mode: plain Backspace undoes the last thing logged.
+COACH_UNDO_KEY = "<backspace>"
+
+HOTKEYS: dict[str, Any] = {
+    "my_cards": ["<f1>", "<f2>", "<f3>", "<f4>", "<f5>", "<f6>", "<f7>", "<f8>"],
+    "opp_seen": [f"<alt>+{i}" for i in range(1, 9)],
+    "opp_predicted": ["<alt>+q", "<alt>+w", "<alt>+e", "<alt>+r"],
+    "coach_opp": COACH_KEYS,
+    "coach_hand": COACH_HAND_KEYS,
+    "coach_undo": COACH_UNDO_KEY,
+    "opp_search": "<alt>+<space>",
+    "start": "<f9>",
+    "end": "<f10>",
+    "next_phase": "<f11>",
+    "undo": "<f12>",
+    "identify": "<alt>+i",
+    "my_ability": "<ctrl>+a",
+    "opp_ability": "<alt>+a",
+    "my_plus": "<ctrl>+=",
+    "my_minus": "<ctrl>+-",
+    "opp_plus": "<alt>+=",
+    "opp_minus": "<alt>+-",
+}
+
+# macOS: Option+letter types a symbol (Option+Q is "œ"), so <alt> bindings never match,
+# and F-keys need Fn or trigger system features. Ctrl+letter/digit arrive intact.
+# Rows mirror the board: digits = your cards, the row below = opponent seen, below that = predicted.
+HOTKEYS_MAC: dict[str, Any] = {
+    "my_cards": [f"<ctrl>+{i}" for i in range(1, 9)],
+    "opp_seen": [f"<ctrl>+{c}" for c in "qwertyui"],
+    "opp_predicted": [f"<ctrl>+{c}" for c in "asdf"],
+    "coach_opp": COACH_KEYS,
+    "coach_hand": COACH_HAND_KEYS,
+    "coach_undo": COACH_UNDO_KEY,
+    "opp_search": "<ctrl>+k",
+    "start": "<ctrl>+g",
+    "end": "<ctrl>+x",
+    "next_phase": "<ctrl>+n",
+    "undo": "<ctrl>+z",
+    "identify": "<ctrl>+o",
+    "my_ability": "<ctrl>+j",
+    "opp_ability": "<ctrl>+l",
+    "my_plus": "<ctrl>+=",
+    "my_minus": "<ctrl>+-",
+    "opp_plus": "<ctrl>+]",
+    "opp_minus": "<ctrl>+[",
+}
 
 DEFAULTS: dict[str, Any] = {
     "api": {
@@ -53,6 +107,10 @@ DEFAULTS: dict[str, Any] = {
         "adb_path": "adb",
         "identify_on_start": True,
         "delay_seconds": 1.5,
+        # If the name banner isn't on screen yet (Start pressed during matchmaking or the
+        # loading fade), screenshot again every retry_seconds for up to retry_for_seconds.
+        "retry_seconds": 2.0,
+        "retry_for_seconds": 20.0,
         # Opponent name + clan banner, as fractions of the screenshot (x0, y0, x1, y1).
         "crop": [0.0, 0.0, 0.75, 0.085],
         # Opened in your browser when the name can't be matched automatically.
@@ -69,24 +127,7 @@ DEFAULTS: dict[str, Any] = {
         # After "end match", wait this long before looking the battle up in your battle log.
         "reconcile_delay_seconds": 20,
     },
-    "hotkeys": {
-        "enabled": True,
-        "my_cards": ["<f1>", "<f2>", "<f3>", "<f4>", "<f5>", "<f6>", "<f7>", "<f8>"],
-        "opp_seen": [f"<alt>+{i}" for i in range(1, 9)],
-        "opp_predicted": ["<alt>+q", "<alt>+w", "<alt>+e", "<alt>+r"],
-        "opp_search": "<alt>+<space>",
-        "start": "<f9>",
-        "end": "<f10>",
-        "next_phase": "<f11>",
-        "undo": "<f12>",
-        "identify": "<alt>+i",
-        "my_ability": "<ctrl>+a",
-        "opp_ability": "<alt>+a",
-        "my_plus": "<ctrl>+=",
-        "my_minus": "<ctrl>+-",
-        "opp_plus": "<alt>+=",
-        "opp_minus": "<alt>+-",
-    },
+    "hotkeys": {"enabled": True, **(HOTKEYS_MAC if sys.platform == "darwin" else HOTKEYS)},
 }
 
 

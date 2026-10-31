@@ -27,6 +27,15 @@ def create_app(harness: Harness, on_startup=None) -> FastAPI:
     app = FastAPI(title="clasharness", lifespan=lifespan)
     app.state.harness = harness
 
+    @app.middleware("http")
+    async def revalidate_ui(request, call_next):
+        # Without this, browsers may reuse an old app.js after an update and pair it
+        # with a newer index.html. no-cache still uses the cached copy when it's current.
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     @app.get("/")
     def index():
         return FileResponse(WEB / "index.html")

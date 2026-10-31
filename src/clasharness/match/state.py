@@ -49,6 +49,10 @@ class Match:
     events: list[Event] = field(default_factory=list)
     opp_tag: str | None = None
     opp_name: str | None = None
+    # The opponent's full deck when we have one: assumed from their battle log ("history"),
+    # set by hand ("manual"). "dismissed" means you said it's not their deck.
+    opp_deck: list[str] | None = None
+    opp_deck_source: str | None = None
 
     # ---- mutation -------------------------------------------------------
     def add(self, type_: str, side: Side | None = None, card: str | None = None,
@@ -94,6 +98,19 @@ class Match:
         """Opponent cards in the order they were first seen (hotkeys Alt+1..8 follow this)."""
         return list(dict.fromkeys(self.plays("opp")))
 
+    def opp_cards(self) -> list[str]:
+        """The opponent's known cards: seen ones in order, then the rest of their assumed deck."""
+        seen = self.opp_revealed()
+        return seen + [c for c in self.opp_deck or [] if c not in seen]
+
+    def cycle_deck(self, side: Side) -> list[str]:
+        """The deck in a fixed order for the cycle model, so the hand's order doesn't shift
+        whenever the opponent reveals a card (opp_cards puts seen cards first)."""
+        if side == "me":
+            return self.my_deck
+        deck = list(self.opp_deck or [])
+        return deck + [c for c in self.opp_revealed() if c not in deck]
+
     def clock(self) -> GameClock:
         syncs = [(self.start_t, 0.0)]
         for e in self.events:
@@ -115,7 +132,7 @@ class Match:
         return self.catalog.cost(card)
 
     def champion(self, side: Side) -> str | None:
-        cards = self.my_deck if side == "me" else self.opp_revealed()
+        cards = self.my_deck if side == "me" else self.opp_cards()
         return next((c for c in cards if (card := self.catalog.get(c)) and card.is_champion), None)
 
     def deltas(self, side: Side) -> list[Delta]:
@@ -155,14 +172,15 @@ class Match:
         reg = self.rules.regulation_seconds
         sides = {}
         for side in SIDES:
-            deck = self.my_deck if side == "me" else self.opp_revealed()
-            view = cycle.infer(deck, self.plays(side))
+            view = cycle.infer(self.cycle_deck(side), self.plays(side))
             sides[side] = {
                 "elixir": simulate(self.rules, clock, self.start_t, self.deltas(side), now).to_dict(),
                 "cycle": view.to_dict(),
                 "champion": self.champion(side),
             }
         sides["opp"]["revealed"] = self.opp_revealed()
+        sides["opp"]["cards"] = self.opp_cards()
+        sides["opp"]["deck_source"] = self.opp_deck_source if self.opp_deck else None
         return {
             "status": "ended" if self.ended else "running",
             "game_time": round(g, 2),
