@@ -4,7 +4,14 @@
 #   ./run.sh check           check your Clash Royale API key and tag
 #   ./run.sh crawl -n 300    build the opponent-prediction dataset
 set -euo pipefail
-cd "$(dirname "$0")"
+
+# Follow symlinks (e.g. a `clasharness` link in ~/.local/bin) back to the repo.
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+cd "$(dirname "$self")"
 
 find_python() {
   for py in python3 python3.13 python3.12 python3.11; do
@@ -63,5 +70,17 @@ for tool in scrcpy adb; do
     echo "Warning: '$tool' not found, so phone mirroring/screenshots won't work. Install with: $install_hint" >&2
   fi
 done
+if [ $# -eq 0 ] && command -v adb >/dev/null 2>&1 && ! adb devices | grep -q $'\tdevice$'; then
+  echo "Warning: no phone found by adb. Plug it in, unlock it and accept USB debugging." >&2
+fi
 
-exec .venv/bin/python -m clasharness "$@"
+# The macOS hotkeys use Ctrl. If this window has focus, the terminal would grab Ctrl+Z
+# (suspend), Ctrl+Y (delayed suspend) and Ctrl+S/Q (pause output) first, so switch
+# those off while the app runs. Ctrl+C still stops it.
+if [ -t 0 ]; then
+  saved_tty=$(stty -g)
+  trap 'stty "$saved_tty"' EXIT
+  stty -ixon susp undef dsusp undef 2>/dev/null || stty -ixon susp undef
+fi
+
+.venv/bin/python -m clasharness "$@"

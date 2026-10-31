@@ -132,7 +132,7 @@ After **End**, the harness waits about 20 s, finds the battle in your battle log
 
 ## Platform notes
 
-- **macOS:** grant your terminal **Accessibility** and **Input Monitoring** permission (System Settings → Privacy & Security) or global hotkeys won't fire. The macOS defaults use Ctrl, because Option+letter types a symbol (Option+Q is "œ") and never matches, and F-keys need Fn. Avoid `<cmd>` bindings: scrcpy uses Cmd for its own shortcuts. `run.command` turns off the terminal's own Ctrl+Z/Y/S/Q while the app runs, so they can't suspend or freeze it.
+- **macOS:** grant your terminal **Accessibility** and **Input Monitoring** permission (System Settings → Privacy & Security) or global hotkeys won't fire. The macOS defaults use Ctrl, because Option+letter types a symbol (Option+Q is "œ") and never matches, and F-keys need Fn. Avoid `<cmd>` bindings: scrcpy uses Cmd for its own shortcuts. `run.sh` turns off the terminal's own Ctrl+Z/Y/S/Q while the app runs, so they can't suspend or freeze it. On macOS you can also double-click `run.command` in Finder.
 - **Linux:** global hotkeys need an **X11** session (pynput can't hook Wayland). On Wayland, log in with an X11 session, or use the browser UI on a second screen or device.
 - scrcpy forwards key presses to the phone as well. Clash Royale ignores F-keys and Alt combos, so this is harmless.
 
