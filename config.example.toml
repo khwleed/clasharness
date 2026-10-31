@@ -6,7 +6,7 @@
 # proxy IP (see README), not your own IP.
 token = ""
 base_url = "https://proxy.royaleapi.dev/v1"
-my_tag = "#YOURTAG"
+my_tag = ""  # your player tag, e.g. "#ABC123"
 
 [openrouter]
 # Used to read the opponent's name off the screen. Leave empty to use OPENROUTER_API_KEY.

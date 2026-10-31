@@ -20,35 +20,47 @@ Clash Royale API (via RoyaleAPI proxy) ─> decks, players, battle logs ─> SQL
 OpenRouter vision ─> opponent name ─> player tag ─> their recent decks
 ```
 
-## Setup
-
-### 1. Install
-
-Requires Python 3.11+.
+## Quick start
 
 ```bash
-git clone <this repo> && cd clasharness
+git clone https://github.com/khwleed/clasharness.git
 ```
 
 ```bash
-uv venv && uv pip install -e ".[dev]"
+cd clasharness && ./run.sh
 ```
 
-(or `python -m venv .venv && .venv/bin/pip install -e ".[dev]"`)
-
-Install `scrcpy` and `adb`:
+The first run creates a virtual environment, installs the app and creates `config.toml`. Fill in your keys there (steps 2 and 3 below), then:
 
 ```bash
-brew install scrcpy android-platform-tools   # macOS
+./run.sh check
 ```
 
 ```bash
-sudo apt install scrcpy adb                  # Debian/Ubuntu
+./run.sh crawl -n 300
 ```
 
-On the phone, turn on **Developer options → USB debugging**, plug it in and accept the prompt. Check it works with `scrcpy` on its own first.
+```bash
+./run.sh
+```
 
-The search popup (Alt+Space) uses Tk. On Linux, install `python3-tk` if it's missing.
+After that, `./run.sh` is all you need each time you play. Press **Ctrl+C** in the terminal to quit.
+
+## Setup details
+
+### 1. Prerequisites
+
+You need Python 3.11+, `scrcpy` and `adb`:
+
+```bash
+brew install python scrcpy android-platform-tools   # macOS
+```
+
+```bash
+sudo apt install python3 python3-venv python3-tk scrcpy adb   # Debian/Ubuntu
+```
+
+On the phone, turn on **Developer options → USB debugging**, plug it in and accept the prompt. Check that `scrcpy` on its own shows your screen first. `run.sh` warns you if `scrcpy` or `adb` is missing.
 
 ### 2. Clash Royale API key (via the RoyaleAPI proxy)
 
@@ -56,12 +68,8 @@ Developer keys are locked to IP addresses. Your home IP changes, so route throug
 
 1. Sign in at <https://developer.clashroyale.com> and create a key.
 2. For the allowed IP address, enter the **RoyaleAPI proxy IP**. At the time of writing it's `45.79.218.79`; check their docs, because it has changed before.
-3. Copy `config.example.toml` to `config.toml`, then set `token` and `my_tag`.
-4. Check it:
-
-```bash
-python -m clasharness check
-```
+3. In `config.toml`, set `token` and `my_tag`.
+4. Check it with `./run.sh check`.
 
 ### 3. OpenRouter API key (for reading the opponent's name)
 
@@ -72,7 +80,7 @@ Without a key, everything else still works: paste the opponent's tag by hand, or
 ### 4. Build the prediction dataset
 
 ```bash
-python -m clasharness crawl -n 500
+./run.sh crawl -n 500
 ```
 
 This starts from your own battle log and walks outward through opponents near your trophy count, storing every ranked 1v1 deck and every player it sees. 500 players takes a few minutes at the default 5 requests per second. Add `--pol-top` to also seed from the Path of Legends leaderboard. While the app runs, it keeps adding a little more every 10 minutes (`[predict]` in config).
@@ -80,7 +88,7 @@ This starts from your own battle log and walks outward through opponents near yo
 ### 5. Run
 
 ```bash
-python -m clasharness
+./run.sh
 ```
 
 This opens <http://127.0.0.1:8765> and, with `autostart = true`, starts scrcpy. Put the two windows side by side (or put the UI on a second monitor or a tablet on the same machine).
@@ -140,7 +148,11 @@ After **End**, the harness waits about 20 s, finds the battle in your battle log
 ## Development
 
 ```bash
-pytest
+.venv/bin/pip install -e ".[dev]"
+```
+
+```bash
+.venv/bin/pytest
 ```
 
 The tests cover elixir, cycle, prediction, the resolver, the vision reader (with a mocked client) and a full scripted match through the HTTP API against a fake Clash Royale server.
