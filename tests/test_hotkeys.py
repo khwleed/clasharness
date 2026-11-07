@@ -44,7 +44,8 @@ def press(listener, *keys):
 
 
 def test_plain_keys_dont_fire_under_a_modifier():
-    keyboard = pytest.importorskip("pynput.keyboard")
+    # pynput raises ImportError (not ModuleNotFoundError) when there is no display.
+    keyboard = pytest.importorskip("pynput.keyboard", exc_type=ImportError)
     fired = []
     listener = exact_hotkeys({k: (lambda k=k: fired.append(k)) for k in ["1", "<ctrl>+1", "<ctrl>+="]})
     one, eq = keyboard.KeyCode.from_char("1"), keyboard.KeyCode.from_char("=")
